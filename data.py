@@ -4,4 +4,11 @@ import haversine as hs
 import geopy as gp
 import staticmap as smap
 
-G = nx.Graph()
+
+
+
+def main():
+    G = nx.Graph()
+
+
+main()
