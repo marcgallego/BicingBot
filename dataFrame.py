@@ -7,13 +7,14 @@ from haversine import haversine
 from geopy.geocoders import Nominatim
 
 ####DADES####
-distancia_vertex = 0.05
+distancia_vertex = 0.5
 grafic = "circular"     #"standar", "random", "circular", "spring"
 ############
 
 url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
 bicing = DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
 station_ids = bicing.index.tolist()
+
 
 def distancia(d, origen, desti):
     latA = bicing.loc[origen, "lat"]
@@ -53,24 +54,27 @@ def drawGraph(G):
         nx.draw_spring(G, with_labels=False, **options)
         plt.savefig("spring.png")
 
+def creaGraf(G):
+        d = distancia_vertex
+        visitat = dict()
+
+        for id in station_ids:
+            G.add_node(id)
+            visitat.update({id: False})
+        i = 0
+        for origen in station_ids:
+            visitat[origen] = True;
+            for desti in station_ids:
+                if (visitat[desti] == False) and (distancia(d, origen, desti) == True):
+                    i = i + 1
+                    G.add_edge(origen, desti)
+        return i;
+
 def main():
     G = nx.Graph()
-    d = distancia_vertex
-    visitat = dict()
-
-    for id in station_ids:
-        G.add_node(id)
-        visitat.update({id: False})
-
-    i = 0
-    for origen in station_ids:
-        visitat[origen] = True;
-        for desti in station_ids:
-            if (visitat[desti] == False) and (distancia(d, origen, desti) == True):
-                i = i + 1
-                G.add_edge(origen, desti)
+    ed = creaGraf(G)
     drawGraph(G)
-    print('Edges: ', i)
-    print('Vertexs: ', len(station_ids))
+    print('Graf fet')
+    print('Vertexs: ', len(station_ids), 'Edges: ', ed)
 
 main()
