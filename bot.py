@@ -1,10 +1,14 @@
 import telegram
 from telegram.ext import Updater, CommandHandler
 
+##PROVISIONAL
+from mapa import dibuixaMapa
+
 #textos
 startText = "Hola! Soc un bot de bicicletes"
 helpText = "Coses que puc fer i presentacio i ajuda i tal i cual"
 authorsText = "Marc Gallego i Marc Vernet i blablabla"
+
 
 #funcions
 def start(bot, update):
@@ -34,6 +38,11 @@ def plotgraph(bot, update):
 def route(bot, update, args):
     bot.send_message(chat_id=update.message.chat_id, text="algo")
 
+###PROVISIONAL
+def estacions(bot, update):
+    #dibuixaMapa()  Molt curios que no cal cridar la funcio perque al importar el fitxer ja s'executa tot
+    bot.send_photo(chat_id=update.message.chat_id, photo=open('map.png', 'rb'))
+
 
 # declara una constant amb el access token que llegeix de token.txt
 TOKEN = open('token.txt').read().strip()
@@ -52,6 +61,9 @@ dispatcher.add_handler(CommandHandler('edges', edges))
 dispatcher.add_handler(CommandHandler('components', components))
 dispatcher.add_handler(CommandHandler('plotgraph', plotgraph))
 dispatcher.add_handler(CommandHandler('route', route, pass_args=True))
+
+##PROVISIONAL
+dispatcher.add_handler(CommandHandler('mapa', estacions))
 
 # engega el bot
 updater.start_polling()
