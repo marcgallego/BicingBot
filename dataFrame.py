@@ -1,18 +1,23 @@
 import pandas as pd
 import networkx as nx
-import matplotlib.pyplot as plt
-
-from pandas import DataFrame
+import matplotlib.pyplot as plt #Llibreria temporal
 from haversine import haversine
+
+from staticmap import StaticMap, CircleMarker, Line
 from geopy.geocoders import Nominatim
 
-####DADES####
+####CONSTANTS####
+IMG_SIZE = 1000
+IMG_PADDING = 5
+CIRCLE_RADIUS = 12
+BLUE = '#0036FF'
+
 distancia_vertex = 0.5
 grafic = "circular"     #"standar", "random", "circular", "spring"
 ############
 
 url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
-bicing = DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
+bicing = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
 station_ids = bicing.index.tolist()
 
 
@@ -29,6 +34,15 @@ def distancia(d, origen, desti):
 
     if (r <= d): return True
     else: return False
+
+def plotGraph(G):
+    map = StaticMap(IMG_SIZE, IMG_SIZE, IMG_PADDING, IMG_PADDING)
+
+    marker = CircleMarker((2.1119387,41.3867085), BLUE, CIRCLE_RADIUS)
+    map.add_marker(marker)
+
+    img = map.render()
+    img.save('map.png')
 
 def drawGraph(G):
     options = {
@@ -74,6 +88,7 @@ def main():
     G = nx.Graph()
     ed = creaGraf(G)
     drawGraph(G)
+    plotGraph(G)
     print('Graf fet')
     print('Vertexs: ', len(station_ids), 'Edges: ', ed)
 
