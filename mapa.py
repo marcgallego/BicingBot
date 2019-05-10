@@ -1,6 +1,5 @@
 import pandas as pd
 import networkx as nx
-import matplotlib.pyplot as plt
 import os
 
 from pandas import DataFrame
@@ -45,7 +44,7 @@ def dibuixaMapa():
     image = m.render()
     image.save('map.png')
     print('mapa fet')
-    import os
+
 
 
 def main():

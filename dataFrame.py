@@ -1,7 +1,8 @@
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt #Llibreria temporal
-from haversine import haversine
+from haversine import *
+dir(haversine)
 
 from staticmap import StaticMap, CircleMarker, Line
 from geopy.geocoders import Nominatim
@@ -12,13 +13,15 @@ IMG_PADDING = 5
 CIRCLE_RADIUS = 12
 BLUE = '#0036FF'
 
-distancia_vertex = 0.5
+distancia_vertex = 100
 grafic = "circular"     #"standar", "random", "circular", "spring"
 ############
 
 url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
 bicing = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
+bicing
 station_ids = bicing.index.tolist()
+station_ids
 
 
 def distancia(d, origen, desti):
@@ -43,6 +46,7 @@ def plotGraph(G):
 
     img = map.render()
     img.save('map.png')
+
 
 def drawGraph(G):
     options = {
@@ -69,7 +73,7 @@ def drawGraph(G):
         plt.savefig("spring.png")
 
 def creaGraf(G):
-        d = distancia_vertex
+        d = 10
         visitat = dict()
 
         for id in station_ids:
