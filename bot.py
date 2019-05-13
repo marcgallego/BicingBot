@@ -8,7 +8,7 @@ from dataBasic import dibuixaMapa, creaGraf
 '''
 Coses que falten a fer:
     --funcio components i route
-    --comprovar que funciona per més d'un usuari a la vegada
+    --comprovar que funciona per més d'un usuari a la vegada (caldrà canviar el nom de les fotos)
     --acabar d'arreglar els textos
     --fer alguna cosa extra per anar de sobrats(amb la capacitat de cada estacio o la altitud)
     --posar algun easteregg aixi fino per las risas

@@ -22,13 +22,29 @@ def addressesTOcoordinates(addresses):
     except:
         return None
 
-def shortestPath(G, d, addresses):
-    addresses = 'Avinguda Diagonal, Carrer Balmes'
+def shortestPath(G, d, addresses, bicing):
+    addresses = 'Avinguda Diagonal, Carrer Balmes' #JUST FOR TESTING
     coords = addressesTOcoordinates(addresses)
     if(coords == None) return None
     if(G == None) G = creaGraf(d)
-    G.add_edge('source')
-    for()
+
+    specialNodes = ('source', 'target')
+    G.add_nodes_from(specialNodes)
+    station_ids = bicing.index.tolist()
+    walk_penalizer = 10/4
+    for id in station_ids:
+        idCoords = getCoords(id)
+        distS = haversine(coords[0], idCoords) * walk_penalizer
+        distT = haversine(coords[1], idCoords) * walk_penalizer
+        G.add_edge(specialNodes[0], id, weight = distS)
+        G.add_edge(specialNodes[1], id, weight = distT)
+
+    distST = haversine(coords[0], coords[1]) * walk_penalizer
+    G.add_edge(specialNodes[0], specialNodes[1], distST)
+
+    #CALL SHORETEST PATH AND PLOT IT
+
+    G.remove_nodes_from(specialNodes)
 
 
 def readData():
@@ -36,25 +52,23 @@ def readData():
     bicing = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
     bicing = bicing.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name', 'address'], axis=1)
     return bicing
+bicing = readData()
+
 
 def getCoords(id, bicing):
     lat = bicing.loc[id, "lat"]
     long = bicing.loc[id, "long"]
     return (lat, long)
 
-bicing, station_ids = readData()
-
-def distancia(d, origen, desti):
+def distance(origen, desti):
     coordA = getCoords(origen, bicing)
     coordB = getCoords(desti, bicing)
 
     r = haversine(coordA, coordB)
-
-    if (r <= d): return True
-    else: return False
+    return r
 
 #################################################################################
-def creaGraf(d):
+def creaGraf(max_dist):
         print('entra')
 
         G = nx.Graph()
@@ -67,8 +81,9 @@ def creaGraf(d):
         for origen in station_ids:
             visitat[origen] = True;
             for desti in station_ids:
-                if (visitat[desti] == False) and (distancia(d, origen, desti) == True):
-                    G.add_edge(origen, desti)
+                distance = distance(origen, desti)
+                if (visitat[desti] == False) and (dist <= max_dist):
+                    G.add_edge(origen, desti, weight = dist)
         print('graf fet')
         return G
 
@@ -107,10 +122,4 @@ def dibuixaMapa(G):
 def connectedComponents(G):
     return number_connected_components(G)
 
-
-'''
-def main():
-    G = creaGraf(0.3)
-    dibuixaMapa(G)
-main()
-'''
+#Potser estaria be posar aqui dues funcions tontes que diguin edges i nodes (per cohesio)
