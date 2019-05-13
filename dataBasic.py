@@ -7,9 +7,6 @@ from haversine import haversine
 from geopy.geocoders import Nominatim
 from staticmap import *
 
-##CONSTANTS
-SPEED_ON_FOOT = 4  # km/h
-SPEED_ON_BIKE = 10 # km/h
 
 def addressesTOcoordinates(addresses):
     '''
@@ -31,7 +28,7 @@ def shortestPath(G, d, addresses):
     if(coords == None) return None
     if(G == None) G = creaGraf(d)
     G.add_edge('source')
-    for
+    for()
 
 
 def readData():
@@ -106,6 +103,10 @@ def dibuixaMapa(G):
     image.save('map.png')
 
     print('mapa fet')
+
+def connectedComponents(G):
+    return number_connected_components(G)
+
 
 '''
 def main():
