@@ -1,28 +1,53 @@
 import pandas as pd
 import networkx as nx
-import matplotlib.pyplot as plt
 import os
 
 from pandas import DataFrame
 from haversine import haversine
 from geopy.geocoders import Nominatim
-from staticmap import*
+from staticmap import *
 
 
+def addressesTOcoordinates(addresses):
+    '''
+    Returns the two coordinates of two addresses of Barcelona
+    in a single string separated by a comma. In case of failure, returns None.
+    '''
+    try:
+        geolocator = Nominatim(user_agent="bicing_bot")
+        address1, address2 = addresses.split(',')
+        location1 = geolocator.geocode(address1 + ', Barcelona')
+        location2 = geolocator.geocode(address2 + ', Barcelona')
+        return (location1.latitude, location1.longitude), (location2.latitude, location2.longitude)
+    except:
+        return None
 
-url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
-bicing = DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
-station_ids = bicing.index.tolist()
+def shortestPath(G, d, addresses):
+    addresses = 'Avinguda Diagonal, Carrer Balmes'
+    coords = addressesTOcoordinates(addresses)
+    if(coords == None) return None
+    if(G == None) G = creaGraf(d)
+    G.add_edge('source')
+    for()
+
+
+def readData():
+    url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
+    bicing = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
+    bicing = bicing.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name', 'address'], axis=1)
+    return bicing
+
+def getCoords(id, bicing):
+    lat = bicing.loc[id, "lat"]
+    long = bicing.loc[id, "long"]
+    return (lat, long)
+
+bicing, station_ids = readData()
 
 def distancia(d, origen, desti):
-    latA = bicing.loc[origen, "lat"]
-    lonA = bicing.loc[origen, "lon"]
+    coordA = getCoords(origen, bicing)
+    coordB = getCoords(desti, bicing)
 
-    latB = bicing.loc[desti, "lat"]
-    lonB = bicing.loc[desti, "lon"]
-
-    coordA = (latA, lonA)
-    coordB = (latB, lonB)
     r = haversine(coordA, coordB)
 
     if (r <= d): return True
@@ -34,6 +59,7 @@ def creaGraf(d):
 
         G = nx.Graph()
         visitat = dict()
+        station_ids = bicing.index.tolist()
 
         for id in station_ids:
             G.add_node(id)
@@ -48,13 +74,12 @@ def creaGraf(d):
 
 def dibuixaMapa(G):
     print('entra mapa')
-    midaX = 500
-    midaY = 500
+    midaX, midaY = 500
     m = StaticMap(midaX, midaY, url_template='http://a.tile.osm.org/{z}/{x}/{y}.png')
 
     nodes = list(G.nodes)
     for n in nodes:
-        coor = (bicing.loc[n, "lon"], bicing.loc[n, "lat"])
+        coor = getCoords(n, bicing)
         diametre = int(midaX / 200)
         marker = CircleMarker(coor, 'black', diametre)
         m.add_marker(marker)
@@ -66,14 +91,8 @@ def dibuixaMapa(G):
         origen = e[0]
         desti = e[1]
 
-        latA = bicing.loc[origen, "lat"]
-        lonA = bicing.loc[origen, "lon"]
-
-        latB = bicing.loc[desti, "lat"]
-        lonB = bicing.loc[desti, "lon"]
-
-        coorA = (lonA, latA)
-        coorB = (lonB, latB)
+        coorA = getCoords(origen, bicing)
+        coorB = getCoords(desti, bicing)
         m.add_line(Line(((coorA), (coorB)), 'blue', gruix))
 
     print('arestes fets')
@@ -85,10 +104,13 @@ def dibuixaMapa(G):
 
     print('mapa fet')
 
+def connectedComponents(G):
+    return number_connected_components(G)
+
+
 '''
 def main():
     G = creaGraf(0.3)
     dibuixaMapa(G)
-
 main()
 '''
