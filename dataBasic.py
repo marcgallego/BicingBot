@@ -4,6 +4,7 @@ import os
 
 from pandas import DataFrame
 from haversine import haversine
+
 from geopy.geocoders import Nominatim
 from staticmap import *
 
@@ -22,29 +23,31 @@ def addressesTOcoordinates(addresses):
     except:
         return None
 
+#POTSER CAL UNA TOLERANCIA PER A LES COMPARACIONS (???)
+
 def shortestPath(G, d, addresses, bicing):
-    addresses = 'Avinguda Diagonal, Carrer Balmes' #JUST FOR TESTING
     coords = addressesTOcoordinates(addresses)
-    if(coords == None) return None
-    if(G == None) G = creaGraf(d)
+    #if(coords == None) return None
+    #if(G == None) G = creaGraf(d)
 
     specialNodes = ('source', 'target')
     G.add_nodes_from(specialNodes)
     station_ids = bicing.index.tolist()
-    walk_penalizer = 10/4
     for id in station_ids:
-        idCoords = getCoords(id)
-        distS = haversine(coords[0], idCoords) * walk_penalizer
-        distT = haversine(coords[1], idCoords) * walk_penalizer
-        G.add_edge(specialNodes[0], id, weight = distS)
-        G.add_edge(specialNodes[1], id, weight = distT)
+        idCoords = getCoords(id, bicing)
+        weightS = weightWalker(coords[0], idCoords, 10, 4)
+        weightT = weightWalker(coords[1], idCoords, 10, 4)
+        G.add_edge(specialNodes[0], id, weight = weightS)
+        G.add_edge(specialNodes[1], id, weight = weightT)
 
-    distST = haversine(coords[0], coords[1]) * walk_penalizer
-    G.add_edge(specialNodes[0], specialNodes[1], distST)
+    weightST = weightWalker(coords[0], coords[1], 10, 4)
+    G.add_edge(specialNodes[0], specialNodes[1], weight=weightST)
 
-    #CALL SHORETEST PATH AND PLOT IT
+    p = nx.shortest_path(G, source=specialNodes[0], target=specialNodes[1], weight='')
 
     G.remove_nodes_from(specialNodes)
+
+    return p
 
 
 def readData():
@@ -52,25 +55,31 @@ def readData():
     bicing = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
     bicing = bicing.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name', 'address'], axis=1)
     return bicing
-bicing = readData()
 
+
+def swap(coords): # returns (lon, lat)
+    return coords[::-1]
 
 def getCoords(id, bicing):
     lat = bicing.loc[id, "lat"]
-    long = bicing.loc[id, "long"]
-    return (lat, long)
+    lon = bicing.loc[id, "lon"]
+    return (lat, lon)
 
-def distance(origen, desti):
+def distance(origen, desti, bicing):
     coordA = getCoords(origen, bicing)
     coordB = getCoords(desti, bicing)
 
-    r = haversine(coordA, coordB)
-    return r
+    return haversine(coordA, coordB, unit='m')
+
+def weightWalker(coordsA, coordsB, by_bike_speed, by_foot_speed):
+    penalizer = by_bike_speed/by_foot_speed
+    distance = haversine(coordsA, coordsB, unit='m')
+    return distance * penalizer
+
 
 #################################################################################
 def creaGraf(max_dist):
         print('entra')
-
         G = nx.Graph()
         visitat = dict()
         station_ids = bicing.index.tolist()
@@ -81,33 +90,36 @@ def creaGraf(max_dist):
         for origen in station_ids:
             visitat[origen] = True;
             for desti in station_ids:
-                distance = distance(origen, desti)
-                if (visitat[desti] == False) and (dist <= max_dist):
-                    G.add_edge(origen, desti, weight = dist)
+                if (not visitat[desti]):
+                    dist = distance(origen, desti, bicing)
+                    if (dist <= max_dist):
+                        G.add_edge(origen, desti, weight = dist)
         print('graf fet')
         return G
 
+
+
 def dibuixaMapa(G):
     print('entra mapa')
-    midaX, midaY = 500
+    midaX = midaY = 1500
     m = StaticMap(midaX, midaY, url_template='http://a.tile.osm.org/{z}/{x}/{y}.png')
 
     nodes = list(G.nodes)
     for n in nodes:
-        coor = getCoords(n, bicing)
+        coords = swap(getCoords(n, bicing))
         diametre = int(midaX / 200)
-        marker = CircleMarker(coor, 'black', diametre)
+        marker = CircleMarker(coords, 'black', diametre)
         m.add_marker(marker)
     print('nodes fets')
 
     edges = list(G.edges.data())
     gruix = int(midaX / 300)
-    for e in edges:
-        origen = e[0]
-        desti = e[1]
+    for edge in edges:
+        origen = edge[0]
+        desti  = edge[1]
 
-        coorA = getCoords(origen, bicing)
-        coorB = getCoords(desti, bicing)
+        coorA = swap(getCoords(origen, bicing))
+        coorB = swap(getCoords(desti, bicing))
         m.add_line(Line(((coorA), (coorB)), 'blue', gruix))
 
     print('arestes fets')
@@ -120,6 +132,12 @@ def dibuixaMapa(G):
     print('mapa fet')
 
 def connectedComponents(G):
-    return number_connected_components(G)
+    return nx.number_connected_components(G)
 
 #Potser estaria be posar aqui dues funcions tontes que diguin edges i nodes (per cohesio)
+
+bicing = readData()
+G=creaGraf(1000)
+dibuixaMapa(G)
+connectedComponents(G)
+shortestPath(G, 1000, 'Passeig de Gràcia 92, La Rambla 51', bicing)
