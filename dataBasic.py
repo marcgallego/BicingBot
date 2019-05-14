@@ -13,7 +13,7 @@ from staticmap import *
 def readData():
     url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
     bicing = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
-    bicing = bicing.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name'], axis=1)
+    bicing = bicing.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name', 'cross_street'], axis=1)
     return bicing
 
 bicing = readData()
@@ -62,6 +62,7 @@ def drawPath(path, bicing):
 
 
     for node in path:
+        if(node != 'source' )
         coords = getCoords(node, bicing)
         marker = CircleMarker(coords, 'black', diameter)
         m.add_marker(marker)
@@ -78,7 +79,7 @@ def drawPath(path, bicing):
 
 
 def shortestPath(G, d, addresses, bicing):
-    d = 1000
+    d = 10000
     G = creaGraf(d)
     addresses = 'Passeig de Gràcia 92, La Rambla 51'
     bicing = readData()
@@ -100,20 +101,21 @@ def shortestPath(G, d, addresses, bicing):
         G.add_edge(specialNodes[0], id, weight = weightS)
         G.add_edge(specialNodes[1], id, weight = weightT)
 
-    weightST = weightWalker(coords[0], coords[1], 10, 4)
-    G.add_edge(specialNodes[0], specialNodes[1], weight=weightST)
+    #weightST = weightWalker(coords[0], coords[1], 10, 4)
+    #G.add_edge(specialNodes[0], specialNodes[1], weight=weightST)
 
-    p = nx.shortest_path(G, source=specialNodes[0], target=specialNodes[1], weight='')
+    p = nx.dijkstra_path(G, source=specialNodes[0], target=specialNodes[1], weight='')
+    p
 
-    ST = [ Series([address : specialNodes[0], lat : coords[0][0], lon : coords[0][1]]),
-           Series([address : specialNodes[1], lat : coords[1][0], lon : coords[1][1]])]
-    bicingST = bicing.append(ST, ignore_index = True)
+    s = {'address' : specialNodes[0], 'lat' : coords[0][0], 'lon' : coords[0][1]}
+    t = {'address' : specialNodes[1], 'lat' : coords[1][0], 'lon' : coords[1][1]}
+    bicingST = bicing.append(s, ignore_index=True)
+    bicingST = bicingST.append(t, ignore_index=True)
     bicingST
 
-    drawPath(p, bicingST)
+    #drawPath(p, bicingST)
 
     #DROP SOURCE AND TARGET FROM 'BICING'
-    bicingST
     G.remove_nodes_from(specialNodes)
 
 #################################################################################
