@@ -9,16 +9,17 @@ from dataBasic import dibuixaMapa, creaGraf, connectedComponents, nodesGraph, ed
 
 '''
 Coses que falten a fer:
-    --funcio components i route
+    --funcio route
     --comprovar que funciona per més d'un usuari a la vegada
     --acabar d'arreglar els textos
     --fer alguna cosa extra per anar de sobrats(amb la capacitat de cada estacio o la altitud)
-    --posar algun easteregg aixi fino per las risas
+    --graf lineal
 
-Comentaris:
-    -- segons la documentacio el graf per defecte ha de ser de mida 1000.
-            Ara es crea a /start pero no entenc molt be com va la cosa
-    --Hi ha un diccionari per relacionar cada id d'usuari amb el seu graf, nose si funciona
+Preguntar:
+    --Esta be el graf per defecte
+    --Es pot fer servir alguna variable global
+    --Esta be usar un diccionari per controlar els usuaris
+
 '''
 
 #textos
