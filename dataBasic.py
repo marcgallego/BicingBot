@@ -78,19 +78,16 @@ def drawPath(path, bicing):
     print('Done!')
 
 
-def shortestPath(G, d, addresses, bicing):
+def shortestPath(G, addresses):
     d = 10000
     G = creaGraf(d)
     addresses = 'Passeig de Gràcia 92, La Rambla 51'
     bicing = readData()
 
     coords = addressesTOcoordinates(addresses)
-
-    #if(coords == None) return None
-    #if(G == None) G = creaGraf(d)
+    if(coords == None) return None
 
     specialNodes = ('source', 'target')
-
     G.add_nodes_from(specialNodes)
 
     station_ids = bicing.index.tolist()
