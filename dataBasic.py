@@ -2,12 +2,41 @@ import pandas as pd
 import networkx as nx
 import os
 
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from haversine import haversine
 
 from geopy.geocoders import Nominatim
 from staticmap import *
 
+
+
+def readData():
+    url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
+    bicing = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
+    bicing = bicing.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name'], axis=1)
+    return bicing
+
+bicing = readData()
+bicing
+
+def swap(coords): # returns (lat, lon)
+    return coords[::-1]
+
+def getCoords(id, bicing):
+    lon = bicing.loc[id, "lon"]
+    lat = bicing.loc[id, "lat"]
+    return (lon, lat)
+
+def distance(origen, desti, bicing):
+    coordA = swap(getCoords(origen, bicing))
+    coordB = swap(getCoords(desti, bicing))
+
+    return haversine(coordA, coordB, unit='m')
+
+def weightWalker(coordsA, coordsB, by_bike_speed, by_foot_speed):
+    penalizer = by_bike_speed/by_foot_speed
+    distance = haversine(coordsA, coordsB, unit='m')
+    return distance * penalizer
 
 def addressesTOcoordinates(addresses):
     '''
@@ -25,16 +54,47 @@ def addressesTOcoordinates(addresses):
 
 #POTSER CAL UNA TOLERANCIA PER A LES COMPARACIONS (???)
 
+def drawPath(path, bicing):
+    mida = 1500
+    diameter = mida / 200
+    thickness = mida / 300
+    m = StaticMap(mida, mida, url_template='http://a.tile.osm.org/{z}/{x}/{y}.png')
+
+
+    for node in path:
+        coords = getCoords(node, bicing)
+        marker = CircleMarker(coords, 'black', diameter)
+        m.add_marker(marker)
+
+    n = len(path)
+    for i in Range(1, n+1):
+        coordsA = getCoords(path[i-1], bicing)
+        coordsB = getCoords(path[i], bicing)
+        m.add_line(Line(((coorA), (coorB)), 'red', thickness))
+
+    image = m.render()
+    image.save('map.png')
+    print('Done!')
+
+
 def shortestPath(G, d, addresses, bicing):
+    d = 1000
+    G = creaGraf(d)
+    addresses = 'Passeig de Gràcia 92, La Rambla 51'
+    bicing = readData()
+
     coords = addressesTOcoordinates(addresses)
+
     #if(coords == None) return None
     #if(G == None) G = creaGraf(d)
 
     specialNodes = ('source', 'target')
+
     G.add_nodes_from(specialNodes)
+
     station_ids = bicing.index.tolist()
     for id in station_ids:
-        idCoords = getCoords(id, bicing)
+        idCoords = swap(getCoords(id, bicing))
         weightS = weightWalker(coords[0], idCoords, 10, 4)
         weightT = weightWalker(coords[1], idCoords, 10, 4)
         G.add_edge(specialNodes[0], id, weight = weightS)
@@ -45,37 +105,16 @@ def shortestPath(G, d, addresses, bicing):
 
     p = nx.shortest_path(G, source=specialNodes[0], target=specialNodes[1], weight='')
 
+    ST = [ Series([address : specialNodes[0], lat : coords[0][0], lon : coords[0][1]]),
+           Series([address : specialNodes[1], lat : coords[1][0], lon : coords[1][1]])]
+    bicingST = bicing.append(ST, ignore_index = True)
+    bicingST
+
+    drawPath(p, bicingST)
+
+    #DROP SOURCE AND TARGET FROM 'BICING'
+    bicingST
     G.remove_nodes_from(specialNodes)
-
-    return p
-
-
-def readData():
-    url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
-    bicing = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
-    bicing = bicing.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name', 'address'], axis=1)
-    return bicing
-
-
-def swap(coords): # returns (lon, lat)
-    return coords[::-1]
-
-def getCoords(id, bicing):
-    lat = bicing.loc[id, "lat"]
-    lon = bicing.loc[id, "lon"]
-    return (lat, lon)
-
-def distance(origen, desti, bicing):
-    coordA = getCoords(origen, bicing)
-    coordB = getCoords(desti, bicing)
-
-    return haversine(coordA, coordB, unit='m')
-
-def weightWalker(coordsA, coordsB, by_bike_speed, by_foot_speed):
-    penalizer = by_bike_speed/by_foot_speed
-    distance = haversine(coordsA, coordsB, unit='m')
-    return distance * penalizer
-
 
 #################################################################################
 def creaGraf(max_dist):
@@ -102,12 +141,12 @@ def creaGraf(max_dist):
 def dibuixaMapa(G):
     print('entra mapa')
     midaX = midaY = 1500
+    diametre = int(midaX / 200)
     m = StaticMap(midaX, midaY, url_template='http://a.tile.osm.org/{z}/{x}/{y}.png')
 
     nodes = list(G.nodes)
-    for n in nodes:
-        coords = swap(getCoords(n, bicing))
-        diametre = int(midaX / 200)
+    for node in nodes:
+        coords = getCoords(node, bicing)
         marker = CircleMarker(coords, 'black', diametre)
         m.add_marker(marker)
     print('nodes fets')
@@ -118,8 +157,8 @@ def dibuixaMapa(G):
         origen = edge[0]
         desti  = edge[1]
 
-        coorA = swap(getCoords(origen, bicing))
-        coorB = swap(getCoords(desti, bicing))
+        coorA = getCoords(origen, bicing)
+        coorB = getCoords(desti, bicing)
         m.add_line(Line(((coorA), (coorB)), 'blue', gruix))
 
     print('arestes fets')
@@ -137,6 +176,7 @@ def connectedComponents(G):
 #Potser estaria be posar aqui dues funcions tontes que diguin edges i nodes (per cohesio)
 
 bicing = readData()
+bicing
 G=creaGraf(1000)
 dibuixaMapa(G)
 connectedComponents(G)
