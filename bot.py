@@ -1,14 +1,16 @@
 import telegram
 from telegram.ext import Updater, CommandHandler
 import networkx as nx
+import random
+import string
 import os
 
-from dataBasic import dibuixaMapa, creaGraf
+from dataBasic import dibuixaMapa, creaGraf, connectedComponents, nodesGraph, edgesGraph
 
 '''
 Coses que falten a fer:
     --funcio components i route
-    --comprovar que funciona per més d'un usuari a la vegada (caldrà canviar el nom de les fotos)
+    --comprovar que funciona per més d'un usuari a la vegada
     --acabar d'arreglar els textos
     --fer alguna cosa extra per anar de sobrats(amb la capacitat de cada estacio o la altitud)
     --posar algun easteregg aixi fino per las risas
@@ -22,13 +24,19 @@ Comentaris:
 #textos
 startText = "Hola! Sóc un bot del Bicing de Barcelona. \nPer més informació escriu /help."
 helpText = "Coses que puc fer i presentacio i ajuda i tal i cual"
-authorsText = "Els meus autors són: \nMarc Gallego: marc.gallego.asin@est.fib.upc.edu \nMarc Vernet:marc.vernet@est.fib.upc.edu"
+authorsText = "Els meus autors són: \nMarc Gallego: marc.gallego.asin@est.fib.upc.edu \nMarc Vernet: marc.vernet@est.fib.upc.edu"
 
 usuaris = dict()
 
+def randomName():
+    stringLength = 10
+    letters = string.ascii_lowercase
+    r = ''.join(random.choice(letters) for i in range(stringLength))
+    return (r + '.png')
+
 def start(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text=startText)
-    usuaris[update.message.chat_id] = creaGraf(1)
+    usuaris[update.message.chat_id] = creaGraf(1000)
 
 def help(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text=helpText)
@@ -37,28 +45,30 @@ def authors(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text=authorsText)
 
 def graph(bot, update, args):
-    usuaris[update.message.chat_id] = creaGraf(int(args[0])/1000)
+    usuaris[update.message.chat_id] = creaGraf(int(args[0]))
     bot.send_message(chat_id=update.message.chat_id, text="graf fet")
 
 def nodes(bot, update):
-    n = usuaris[update.message.chat_id].number_of_nodes()
+    n = nodesGraph(usuaris[update.message.chat_id])
     bot.send_message(chat_id=update.message.chat_id, text=n)
 
 def edges(bot, update):
-    n = usuaris[update.message.chat_id].number_of_edges()
+    n = edgesGraph(usuaris[update.message.chat_id])
     bot.send_message(chat_id=update.message.chat_id, text=n)
 
 def components(bot, update):
-    bot.send_message(chat_id=update.message.chat_id, text="algo")
+    n = connectedComponents(usuaris[update.message.chat_id])
+    bot.send_message(chat_id=update.message.chat_id, text=n)
 
 def plotgraph(bot, update):
-    dibuixaMapa(usuaris[update.message.chat_id])
-    bot.send_photo(chat_id=update.message.chat_id, photo=open('map.png', 'rb'))
-    os.remove("map.png")
+    photoName = randomName()
+    dibuixaMapa(usuaris[update.message.chat_id], photoName)
+    bot.send_photo(chat_id=update.message.chat_id, photo=open(photoName, 'rb'))
+    os.remove(photoName)
 
 def route(bot, update, args):
+    shortestPath(usuaris[update.message.chat_id], args)
     bot.send_message(chat_id=update.message.chat_id, text="algo")
-
 
 # declara una constant amb el access token que llegeix de token.txt
 TOKEN = open('token.txt').read().strip()
