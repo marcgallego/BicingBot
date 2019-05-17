@@ -16,8 +16,6 @@ def readData():
     bicing = bicing.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name', 'cross_street'], axis=1)
     return bicing
 
-bicing = readData()
-bicing
 
 def swap(coords): # returns (lat, lon)
     return coords[::-1]
@@ -33,10 +31,10 @@ def distance(origen, desti, bicing):
 
     return haversine(coordA, coordB, unit='m')
 
-def weightWalker(coordsA, coordsB, by_bike_speed, by_foot_speed):
-    penalizer = by_bike_speed/by_foot_speed
+def walkTime(coordsA, coordsB):
+    speed = 4*1000/3600
     distance = haversine(coordsA, coordsB, unit='m')
-    return distance * penalizer
+    return distance / speed
 
 def addressesTOcoordinates(addresses):
     '''
@@ -62,7 +60,6 @@ def drawPath(path, bicing):
 
 
     for node in path:
-        if(node != 'source' )
         coords = getCoords(node, bicing)
         marker = CircleMarker(coords, 'black', diameter)
         m.add_marker(marker)
@@ -79,41 +76,35 @@ def drawPath(path, bicing):
 
 
 def shortestPath(G, addresses):
-    d = 10000
-    G = creaGraf(d)
-    addresses = 'Passeig de Gràcia 92, La Rambla 51'
-    bicing = readData()
 
     coords = addressesTOcoordinates(addresses)
-    if(coords == None) return None
+    if(coords == None):
+        return None
 
-    specialNodes = ('source', 'target')
-    G.add_nodes_from(specialNodes)
+    G.add_nodes_from(('source', 'target'))
 
+    #bicing = readData()
     station_ids = bicing.index.tolist()
     for id in station_ids:
         idCoords = swap(getCoords(id, bicing))
-        weightS = weightWalker(coords[0], idCoords, 10, 4)
-        weightT = weightWalker(coords[1], idCoords, 10, 4)
-        G.add_edge(specialNodes[0], id, weight = weightS)
-        G.add_edge(specialNodes[1], id, weight = weightT)
+        G.add_edge('source', id, weight = walkTime(coords[0], idCoords))
+        G.add_edge('target', id, weight = walkTime(coords[1], idCoords))
 
-    #weightST = weightWalker(coords[0], coords[1], 10, 4)
-    #G.add_edge(specialNodes[0], specialNodes[1], weight=weightST)
+    weightST = walkTime(coords[0], coords[1])
+    G.add_edge('source', 'target', weight=weightST)
 
-    p = nx.dijkstra_path(G, source=specialNodes[0], target=specialNodes[1], weight='')
-    p
+    p = nx.dijkstra_path(G,'source','target','weight')
+    print(p)
 
-    s = {'address' : specialNodes[0], 'lat' : coords[0][0], 'lon' : coords[0][1]}
+    '''s = {'address' : specialNodes[0], 'lat' : coords[0][0], 'lon' : coords[0][1]}
     t = {'address' : specialNodes[1], 'lat' : coords[1][0], 'lon' : coords[1][1]}
     bicingST = bicing.append(s, ignore_index=True)
-    bicingST = bicingST.append(t, ignore_index=True)
-    bicingST
+    bicingST = bicingST.append(t, ignore_index=True)'''
 
     #drawPath(p, bicingST)
 
     #DROP SOURCE AND TARGET FROM 'BICING'
-    G.remove_nodes_from(specialNodes)
+    #G.remove_nodes_from(('source', 'target'))
 
 #################################################################################
 def creaGraf(max_dist):
@@ -121,6 +112,7 @@ def creaGraf(max_dist):
         G = nx.Graph()
         visitat = dict()
         station_ids = bicing.index.tolist()
+        speed = 10*1000/3600
 
         for id in station_ids:
             G.add_node(id)
@@ -131,7 +123,7 @@ def creaGraf(max_dist):
                 if (not visitat[desti]):
                     dist = distance(origen, desti, bicing)
                     if (dist <= max_dist):
-                        G.add_edge(origen, desti, weight = dist)
+                        G.add_edge(origen, desti, weight = dist/speed)
         print('graf fet')
         return G
 
@@ -175,8 +167,6 @@ def connectedComponents(G):
 #Potser estaria be posar aqui dues funcions tontes que diguin edges i nodes (per cohesio)
 
 bicing = readData()
-bicing
+
 G=creaGraf(1000)
-dibuixaMapa(G)
-connectedComponents(G)
-shortestPath(G, 1000, 'Passeig de Gràcia 92, La Rambla 51', bicing)
+shortestPath(G,'Avinguda Diagonal 92, Plaça de Sant Jaume')
