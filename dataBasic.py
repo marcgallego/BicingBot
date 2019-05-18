@@ -51,25 +51,33 @@ def addressesTOcoordinates(addresses):
         return None
 
 #POTSER CAL UNA TOLERANCIA PER A LES COMPARACIONS (???)
+#CAL MIRAR QUAN HEM DE FER READ_DATAs
+#FALTA DOCUMENTAR
 
-def drawPath(path, bicing):
+def drawPath(path, coordsST, bicing):
     mida = 1500
-    diameter = mida / 200
-    thickness = mida / 300
+    diameter = mida // 200
+    thickness = mida // 300
     m = StaticMap(mida, mida, url_template='http://a.tile.osm.org/{z}/{x}/{y}.png')
+    n = len(path)
 
-
-    for node in path:
-        coords = getCoords(node, bicing)
+    #Plotting vertices:
+    m.add_marker(CircleMarker(swap(coordsST[0]), 'yellow', diameter))
+    m.add_marker(CircleMarker(swap(coordsST[1]), 'yellow', diameter))
+    for id in path[1:-1]:
+        coords = getCoords(id, bicing)
         marker = CircleMarker(coords, 'black', diameter)
         m.add_marker(marker)
 
-    n = len(path)
-    for i in Range(1, n+1):
-        coordsA = getCoords(path[i-1], bicing)
-        coordsB = getCoords(path[i], bicing)
-        m.add_line(Line(((coorA), (coorB)), 'red', thickness))
-
+    if n == 2:
+        m.add_line(Line((swap(coordsST[0]), swap(coordsST[1])), 'blue', thickness))
+    else:
+        m.add_line(Line((swap(coordsST[0]), getCoords(path[1],bicing)), 'blue', thickness))
+        for i in range(2, n-1):
+            coordsA = getCoords(path[i-1], bicing)
+            coordsB = getCoords(path[i], bicing)
+            m.add_line(Line(((coordsA), (coordsB)), 'red', thickness))
+        m.add_line(Line((swap(coordsST[1]), getCoords(path[-2],bicing)), 'blue', thickness))
     image = m.render()
     image.save('map.png')
     print('Done!')
@@ -77,8 +85,8 @@ def drawPath(path, bicing):
 
 def shortestPath(G, addresses):
 
-    coords = addressesTOcoordinates(addresses)
-    if(coords == None):
+    coordsST = addressesTOcoordinates(addresses)
+    if(coordsST == None):
         return None
 
     G.add_nodes_from(('source', 'target'))
@@ -87,24 +95,17 @@ def shortestPath(G, addresses):
     station_ids = bicing.index.tolist()
     for id in station_ids:
         idCoords = swap(getCoords(id, bicing))
-        G.add_edge('source', id, weight = walkTime(coords[0], idCoords))
-        G.add_edge('target', id, weight = walkTime(coords[1], idCoords))
+        G.add_edge('source', id, weight = walkTime(coordsST[0], idCoords))
+        G.add_edge('target', id, weight = walkTime(coordsST[1], idCoords))
 
-    weightST = walkTime(coords[0], coords[1])
+    weightST = walkTime(coordsST[0], coordsST[1])
     G.add_edge('source', 'target', weight=weightST)
 
     p = nx.dijkstra_path(G,'source','target','weight')
-    print(p)
+    drawPath(p, coordsST, bicing)
 
-    '''s = {'address' : specialNodes[0], 'lat' : coords[0][0], 'lon' : coords[0][1]}
-    t = {'address' : specialNodes[1], 'lat' : coords[1][0], 'lon' : coords[1][1]}
-    bicingST = bicing.append(s, ignore_index=True)
-    bicingST = bicingST.append(t, ignore_index=True)'''
-
-    #drawPath(p, bicingST)
-
-    #DROP SOURCE AND TARGET FROM 'BICING'
-    #G.remove_nodes_from(('source', 'target'))
+    G.remove_nodes_from(('source', 'target'))
+    return p
 
 #################################################################################
 def creaGraf(max_dist):
@@ -169,4 +170,5 @@ def connectedComponents(G):
 bicing = readData()
 
 G=creaGraf(1000)
-shortestPath(G,'Avinguda Diagonal 92, Plaça de Sant Jaume')
+p = shortestPath(G,'Avinguda Diagonal 92, Plaça de Sant Jaume')
+p
