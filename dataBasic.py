@@ -133,7 +133,7 @@ def creaGraf(max_dist):
 def dibuixaMapa(G):
     print('entra mapa')
     midaX = midaY = 1500
-    diametre = int(midaX / 200)
+    diametre = midaX // 200
     m = StaticMap(midaX, midaY, url_template='http://a.tile.osm.org/{z}/{x}/{y}.png')
 
     nodes = list(G.nodes)
@@ -144,7 +144,7 @@ def dibuixaMapa(G):
     print('nodes fets')
 
     edges = list(G.edges.data())
-    gruix = int(midaX / 300)
+    gruix = midaX // 300
     for edge in edges:
         origen = edge[0]
         desti  = edge[1]
