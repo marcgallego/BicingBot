@@ -12,25 +12,25 @@ import string
 
 def readData():
     url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
-    bicing = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
-    bicing = bicing.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name', 'cross_street'], axis=1)
-    return bicing
-bicing = readData()
+    stations = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
+    stations = stations.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name', 'cross_street'], axis=1)
+    return stations
+stations = readData()
 
 
 def swap(coords): # returns (lat, lon)
     return coords[::-1]
 
 
-def getCoords(id, bicing):
-    lon = bicing.loc[id, "lon"]
-    lat = bicing.loc[id, "lat"]
+def getCoords(id, stations):
+    lon = stations.loc[id, "lon"]
+    lat = stations.loc[id, "lat"]
     return (lon, lat)
 
 
 def distance(origen, desti):
-    coordA = swap(getCoords(origen, bicing))
-    coordB = swap(getCoords(desti, bicing))
+    coordA = swap(getCoords(origen, stations))
+    coordB = swap(getCoords(desti, stations))
     return haversine(coordA, coordB, unit='m')
 
 
@@ -42,7 +42,7 @@ def walkTime(coordsA, coordsB):
 
 def addressesTOcoordinates(addresses):
     try:
-        geolocator = Nominatim(user_agent="bicing_bot")
+        geolocator = Nominatim(user_agent="stations_bot")
         address1, address2 = addresses.split(',')
         location1 = geolocator.geocode(address1 + ', Barcelona')
         location2 = geolocator.geocode(address2 + ', Barcelona')
@@ -65,19 +65,19 @@ def drawPath(path, coordsST, photoName):
     m.add_marker(CircleMarker(swap(coordsST[1]), 'black', diameter*2))
     m.add_marker(CircleMarker(swap(coordsST[1]), 'white', diameter))
     for id in path[1:-1]:
-        coords = getCoords(id, bicing)
+        coords = getCoords(id, stations)
         marker = CircleMarker(coords, 'black', diameter)
         m.add_marker(marker)
 
     if n == 2:
         m.add_line(Line((swap(coordsST[0]), swap(coordsST[1])), 'red', thickness))
     else:
-        m.add_line(Line((swap(coordsST[0]), getCoords(path[1],bicing)), 'red', thickness))
+        m.add_line(Line((swap(coordsST[0]), getCoords(path[1],stations)), 'red', thickness))
         for i in range(2, n-1):
-            coordsA = getCoords(path[i-1], bicing)
-            coordsB = getCoords(path[i], bicing)
+            coordsA = getCoords(path[i-1], stations)
+            coordsB = getCoords(path[i], stations)
             m.add_line(Line(((coordsA), (coordsB)), 'blue', thickness))
-        m.add_line(Line((swap(coordsST[1]), getCoords(path[-2],bicing)), 'red', thickness))
+        m.add_line(Line((swap(coordsST[1]), getCoords(path[-2],stations)), 'red', thickness))
     image = m.render()
     image.save(photoName)
     print('Done!')
@@ -91,10 +91,10 @@ def shortestPath(G, addresses, photoName):
         return None
     G.add_nodes_from(('source', 'target'))
 
-    #bicing = readData()
-    station_ids = bicing.index.tolist()
+    #stations = readData()
+    station_ids = stations.index.tolist()
     for id in station_ids:
-        idCoords = swap(getCoords(id, bicing))
+        idCoords = swap(getCoords(id, stations))
         G.add_edge('source', id, weight = walkTime(coordsST[0], idCoords))
         G.add_edge('target', id, weight = walkTime(coordsST[1], idCoords))
 
@@ -112,7 +112,7 @@ def creaGraf(max_dist):
     print('entra')
     G = nx.Graph()
     visitat = dict()
-    station_ids = bicing.index.tolist()
+    station_ids = stations.index.tolist()
     speed = 10*1000/3600
 
     for id in station_ids:
@@ -137,7 +137,7 @@ def dibuixaMapa(G, photoName):
 
     nodes = list(G.nodes)
     for node in nodes:
-        coords = getCoords(node, bicing)
+        coords = getCoords(node, stations)
         m.add_marker(CircleMarker(coords, 'black', diametre*2))
         m.add_marker(CircleMarker(coords, 'white', diametre))
     print('nodes fets')
@@ -148,8 +148,8 @@ def dibuixaMapa(G, photoName):
         origen = edge[0]
         desti  = edge[1]
 
-        coorA = getCoords(origen, bicing)
-        coorB = getCoords(desti, bicing)
+        coorA = getCoords(origen, stations)
+        coorB = getCoords(desti, stations)
         m.add_line(Line(((coorA), (coorB)), 'blue', gruix))
 
     print('arestes fets')
