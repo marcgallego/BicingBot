@@ -42,18 +42,18 @@ def help(bot, update):
 
 
 def authors(bot, update):
-    authorsText = "Els meus autors són: \nMarc Gallego🤓: marc.gallego.asin@est.fib.upc.edu \
-    \nMarc Vernet😎: marc.vernet@est.fib.upc.edu"
+    authorsText = "Els meus autors són: \nMarc Gàllego 🤓: marc.gallego.asin@est.fib.upc.edu \
+    \nMarc Vernet 😎: marc.vernet@est.fib.upc.edu"
     bot.send_message(chat_id=update.message.chat_id, text=authorsText)
 
 
 def graph(bot, update, args, user_data):
-    bot.send_message(chat_id=update.message.chat_id, text="⏲️Creant graf...")
+    bot.send_message(chat_id=update.message.chat_id, text="⏲️ Creant graf...")
     try:
         user_data['graf'] = creaGraf(int(args[0]))
-        bot.send_message(chat_id=update.message.chat_id, text="✔️Graf creat!")
+        bot.send_message(chat_id=update.message.chat_id, text="✔️ Graf creat!")
     except:
-        bot.send_message(chat_id=update.message.chat_id, text="💀Alguna cosa ha fallat...")
+        bot.send_message(chat_id=update.message.chat_id, text="💀 Alguna cosa ha fallat...")
 
 
 def nodes(bot, update, user_data):
@@ -72,7 +72,7 @@ def components(bot, update, user_data):
 
 
 def plotgraph(bot, update, user_data):
-    bot.send_message(chat_id=update.message.chat_id, text="🏗️Construint mapa...")
+    bot.send_message(chat_id=update.message.chat_id, text="🏗️ Construint mapa...")
     try:
         photoName = randomName()
         dibuixaMapa(user_data['graf'], photoName)
@@ -83,7 +83,7 @@ def plotgraph(bot, update, user_data):
 
 
 def route(bot, update, args, user_data):
-    bot.send_message(chat_id=update.message.chat_id, text="⏲️Calculant ruta...")
+    bot.send_message(chat_id=update.message.chat_id, text="⏲️ Calculant ruta...")
     try:
         photoName = randomName()
         str = (" ".join(args))
@@ -91,7 +91,7 @@ def route(bot, update, args, user_data):
         bot.send_photo(chat_id=update.message.chat_id, photo=open(photoName, 'rb'))
         os.remove(photoName)
     except:
-        bot.send_message(chat_id=update.message.chat_id, text="💀Alguna cosa ha fallat...")
+        bot.send_message(chat_id=update.message.chat_id, text="💀 Alguna cosa ha fallat...")
 
 
 # declara una constant amb el access token que llegeix de token.txt
