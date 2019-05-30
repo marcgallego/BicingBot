@@ -29,8 +29,8 @@ def randomName():
 
 
 def start(bot, update, user_data):
-    startText = "Hola " + update.message.chat.first_name + "!😄 Sóc un bot del Bicing de Barcelona.\
-    \nEt puc ajudar a buscar rutes i moltes coses més!😏😏 \nPer més informació escriu /help."
+    startText = "Hola " + update.message.chat.first_name + "! 😄 Sóc un bot del Bicing de Barcelona.\
+    \nEt puc ajudar a buscar rutes i moltes coses més! 😏😏 \nPer més informació escriu /help."
     bot.send_message(chat_id=update.message.chat_id, text=startText)
     user_data['graf'] = creaGraf(1000)
 
@@ -79,7 +79,7 @@ def plotgraph(bot, update, user_data):
         bot.send_photo(chat_id=update.message.chat_id, photo=open(photoName, 'rb'))
         os.remove(photoName)
     except:
-        bot.send_message(chat_id=update.message.chat_id, text="💀Alguna cosa ha fallat...")
+        bot.send_message(chat_id=update.message.chat_id, text="💀 Alguna cosa ha fallat...")
 
 
 def route(bot, update, args, user_data):
