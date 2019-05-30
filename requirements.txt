@@ -4,3 +4,4 @@ staticmap
 geopy
 haversine==2.0.0
 telegram
+python-telegram-bot
