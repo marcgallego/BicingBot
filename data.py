@@ -1,21 +1,26 @@
+import os
 import pandas as pd
 import networkx as nx
-import os
-
-from pandas import DataFrame, Series
+import itertools as it
 from haversine import haversine
 
 from geopy.geocoders import Nominatim
 from staticmap import *
 import string
 
+def getBikes():
+    url_status = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_status'
+    bikes = DataFrame.from_records(pd.read_json(url_status)['data']['stations'], index='station_id')
+    bikes = bikes[['num_bikes_available', 'num_docks_available']]
+    return bikes
 
-def readData():
-    url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
-    stations = pd.DataFrame.from_records(pd.read_json(url)['data']['stations'], index='station_id')
-    stations = stations.drop(['physical_configuration', 'capacity', 'altitude', 'post_code', 'name', 'cross_street'], axis=1)
+def getStations():
+    url_info = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
+    stations = pd.DataFrame.from_records(pd.read_json(url_info)['data']['stations'], index='station_id')
+    stations = stations[['address', 'lat', 'lon']]
     return stations
-stations = readData()
+
+stations = getStations()
 
 
 def swap(coords): # returns (lat, lon)
@@ -55,7 +60,7 @@ def drawPath(path, coordsST, photoName):
     mida = 1500
     diameter = mida // 180
     thickness = mida // 300
-    m = StaticMap(mida, mida, url_template='http://a.tile.osm.org/{z}/{x}/{y}.png')
+    m = StaticMap(mida, mida)
     n = len(path)
 
     #Plotting vertices:
@@ -64,6 +69,7 @@ def drawPath(path, coordsST, photoName):
 
     m.add_marker(CircleMarker(swap(coordsST[1]), 'black', diameter*2))
     m.add_marker(CircleMarker(swap(coordsST[1]), 'white', diameter))
+
     for id in path[1:-1]:
         coords = getCoords(id, stations)
         marker = CircleMarker(coords, 'black', diameter)
@@ -91,7 +97,7 @@ def shortestPath(G, addresses, photoName):
         return None
     G.add_nodes_from(('source', 'target'))
 
-    #stations = readData()
+    #stations = getStations()
     station_ids = stations.index.tolist()
     for id in station_ids:
         idCoords = swap(getCoords(id, stations))
@@ -133,7 +139,7 @@ def dibuixaMapa(G, photoName):
     print('entra mapa')
     midaX = midaY = 1500
     diametre = midaX // 180
-    m = StaticMap(midaX, midaY, url_template='http://a.tile.osm.org/{z}/{x}/{y}.png')
+    m = StaticMap(midaX, midaY)
 
     nodes = list(G.nodes)
     for node in nodes:
@@ -161,6 +167,43 @@ def dibuixaMapa(G, photoName):
 
     print('mapa fet')
 
+def distributeBikes(radius, requiredBikes, requiredDocks):
+    DG = nx.DiGraph()
+    DG.add_node('TOP') # The green node
+    demand = 0
+
+    bikes = getBikes()
+    for st in bikes.itertuples():
+        idx = st.Index # Station ID
+        if idx not in stations.index: continue
+        stridx = str(idx)
+
+        # The blue (s), black (g) and red (t) nodes of the graph
+        s_idx, g_idx, t_idx = 's'+stridx, 'g'+stridx, 't'+stridx
+        DG.add_node(g_idx)
+        DG.add_node(s_idx)
+        DG.add_node(t_idx)
+
+        b, d = st.num_bikes_available, st.num_docks_available
+        req_bikes = max(0, requiredBikes - b)
+        req_docks = max(0, requiredDocks - d)
+
+        # Some of the following edges require attributes (posar capacitats)
+        DG.add_edge('TOP', s_idx)
+        DG.add_edge(t_idx, 'TOP')
+        DG.add_edge(s_idx, g_idx, capacity = max(0, b - requiredBikes)) #Bicis que puc rebre per seguir tenint n docks
+        DG.add_edge(g_idx, t_idx, capacity = max(0, d - requiredDocks)) #Bicis que puc donar per seguir tenint m bicis
+
+        if req_bikes > 0:
+            demand += req_bikes
+            DG.nodes[t_idx]['demand'] = req_bikes
+        elif req_docks > 0:
+            demand -= req_docks
+            DG.nodes[s_idx]['demand'] = -req_docks
+
+    DG.nodes['TOP']['demand'] = -demand # The sum of the demands must be zero
+
+
 
 #Potser estaria be posar aqui dues funcions tontes que diguin edges i nodes (per cohesio)
 def connectedComponents(G):
@@ -171,3 +214,6 @@ def nodesGraph(G):
 
 def edgesGraph(G):
     return G.number_of_edges()
+
+
+distributeBikes(1,2,3)
