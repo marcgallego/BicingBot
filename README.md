@@ -6,7 +6,12 @@ Try our bot at [t.me/TheRealBicingBot](https://t.me/TheRealBicingBot)
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+D'entrada, cal clonar aquest repositori a la vostra màquina local, feu-ho amb la comanda següent:
+
+```
+git clone https://github.com/rorencio/BicingBot.git
+```
+En cas de no tenir `git` instal·lat, podeu obteir-lo des d'[aquí](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 
 ### Prerequisits
 
@@ -24,16 +29,11 @@ Ara podeu provar localment les funcions de l'arxiu `data.py` o bé executar el v
 
 ## Running the tests
 
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
+Per a executar els tests, simplement executeu el programa `data.py`, amb la comanda següent:
 ```
-Give an example
+python3 data.py
 ```
-
+Això, per defecte, executarà un parell de vegades cada una de les funcions principals del programa, amb uns paràmtetres predeterminats. Sentiu-vos lliure de modificar la funció `tests` per a alterar aquests paràmetres.
 
 
 ## Deployment

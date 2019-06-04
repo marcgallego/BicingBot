@@ -229,4 +229,9 @@ def edgesGraph(G):
     return G.number_of_edges()
 
 
+def tests():
+    print("Executar tests")
+
+
 distributeBikes(1,2,3)
+tests()
