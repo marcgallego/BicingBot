@@ -34,7 +34,7 @@ Per a executar els tests, simplement executeu el programa `data.py`, amb la coma
 ```
 python3 data.py
 ```
-Això, per defecte, executarà un parell de vegades cada una de les funcions principals del programa, amb uns paràmetres predeterminats. Sentiu-vos lliure de modificar la funció `tests` per a alterar aquests paràmetres.
+Això, per defecte, executarà un parell de vegades cada una de les funcions principals del programa, amb uns paràmetres predeterminats. Sentiu-vos lliures de modificar la funció `tests` per a alterar aquests paràmetres.
 
 
 ## Deployment
@@ -44,8 +44,17 @@ Mentre estigui corrent, podreu usar el bot. Si voleu executar-lo de forma més c
 
 ## Eines usades
 
+### Llibreries principals
+* [NetworkX](https://atom.io/packages/hydrogen) - Creació i gestió de grafs
+* [Pandas](https://pandas.pydata.org/) - Tractament de les dades
+* [StaticMap](https://github.com/komoot/staticmap) - Ploteig dels mapes
+* [Haversine](https://pypi.org/project/haversine/) - Càlcul de distàncies a partir de coordenades
+* [GeoPy](https://geopy.readthedocs.io/en/stable/#) - Traducció d'adreces a coordenades
+
+### Entorn de programció
 * [Hydrogen](https://atom.io/packages/hydrogen) - Execució de codi de forma interactiva
 * [Jupyter Notebook](https://jupyter.org/) - Execució de codi per blocs
+
 
 
 ## Autors
