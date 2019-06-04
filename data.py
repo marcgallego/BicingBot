@@ -10,7 +10,7 @@ import string
 
 def getBikes():
     url_status = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_status'
-    bikes = DataFrame.from_records(pd.read_json(url_status)['data']['stations'], index='station_id')
+    bikes = pd.DataFrame.from_records(pd.read_json(url_status)['data']['stations'], index='station_id')
     bikes = bikes[['num_bikes_available', 'num_docks_available']]
     return bikes
 
@@ -167,6 +167,7 @@ def dibuixaMapa(G, photoName):
 
     print('mapa fet')
 
+
 def distributeBikes(radius, requiredBikes, requiredDocks):
     DG = nx.DiGraph()
     DG.add_node('TOP') # The green node
@@ -202,6 +203,18 @@ def distributeBikes(radius, requiredBikes, requiredDocks):
             DG.nodes[s_idx]['demand'] = -req_docks
 
     DG.nodes['TOP']['demand'] = -demand # The sum of the demands must be zero
+
+    for idx1, idx2 in it.combinations(stations.index.values, 2):
+        coord1 = (stations.at[idx1, 'lat'], stations.at[idx1, 'lon'])
+        coord2 = (stations.at[idx2, 'lat'], stations.at[idx2, 'lon'])
+        dist = haversine(coord1, coord2, unit='m')
+        if dist <= radius:
+            dist = int(dist*1000)
+            # The edges must be bidirectional: g_idx1 <--> g_idx2
+            DG.add_edge('g'+str(idx1), 'g'+str(idx2), weight=dist)
+            DG.add_edge('g'+str(idx2), 'g'+str(idx1), weight=dist)
+
+    print('Graph with', DG.number_of_nodes(), "nodes and", DG.number_of_edges(), "edges.")
 
 
 

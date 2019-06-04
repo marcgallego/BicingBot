@@ -145,12 +145,14 @@ def creaGraf(max_dist):
     return G
 
 def main():
-    d = 750
+    d = 600
 
     G = grafLinial(d)
+    print(G.number_of_edges())
     dibuixaMapa(G, "linial.jpg")
 
     Q = grafQuadratic(d)
+    print(Q.number_of_edges())
     dibuixaMapa(Q, "quadratic.jpg")
 
 main()
