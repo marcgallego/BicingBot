@@ -17,14 +17,13 @@ def flows(radius, requiredBikes, requiredDocks):
 
     print(len(bikes.loc[(bikes[nbikes] < requiredBikes) | (bikes[ndocks] < requiredDocks)]))
 
-
     G = creaGraf(radius, True)
-    G.add_node('TOP') # The green node
+    G.add_node('TOP')  # The green node
     demand = 0
 
-    ### Iterem per totes les estacions:
+    # Iterem per totes les estacions:
     for st in bikes.itertuples():
-        idx = st.Index # Station ID
+        idx = st.Index  # Station ID
         if idx not in stations.index: continue
         stridx = str(idx)
 
@@ -37,11 +36,14 @@ def flows(radius, requiredBikes, requiredDocks):
         req_bikes = max(0, requiredBikes - b)
         req_docks = max(0, requiredDocks - d)
 
+        cap_bikes = max(0, b - requiredBikes)
+        cap_docks = max(0, d - requiredDocks)
+
         # Some of the following edges require attributes (posar capacitats)
         G.add_edge('TOP', s_idx)
         G.add_edge(t_idx, 'TOP')
-        G.add_edge(s_idx, g_idx, capacity = max(0, b - requiredBikes)) #Bicis que puc rebre per seguir tenint n docks
-        G.add_edge(g_idx, t_idx, capacity = max(0, d - requiredDocks)) #Bicis que puc donar per seguir tenint m bicis
+        G.add_edge(s_idx, g_idx, capacity=cap_bikes)  # Bicis que puc rebre per seguir tenint n docks
+        G.add_edge(g_idx, t_idx, capacity=cap_docks)  # Bicis que puc donar per seguir tenint m bicis
 
         if req_bikes > 0:
             demand += req_bikes
@@ -50,7 +52,7 @@ def flows(radius, requiredBikes, requiredDocks):
             demand -= req_docks
             G.nodes[s_idx]['demand'] = -req_docks
 
-    G.nodes['TOP']['demand'] = -demand # The sum of the demands must be zero
+    G.nodes['TOP']['demand'] = -demand  # The sum of the demands must be zero
 
     print('Graph with', G.number_of_nodes(), "nodes and", G.number_of_edges(), "edges.")
 
@@ -76,15 +78,13 @@ def flows(radius, requiredBikes, requiredDocks):
 
             if isinstance(src, int) or src == 'TOP': continue
             idx_src = int(src[1:])
-            for dst, b in flowDict[src].items():
-                if isinstance(src, int) and b > 0:
-                    idx_dst = int(dst)
-                    print(idx_src, "->", idx_dst, " ", b, "bikes, distance", G.edges[src, dst]['weight'])
+            for idx_dst, b in flowDict[src].items():
+                if isinstance(idx_dst, int) and b > 0:
+                    print(idx_src, "->", idx_dst, " ", b, "bikes, distance", G.edges[src, idx_dst]['weight'])
                     bikes.at[idx_src, nbikes] -= b
                     bikes.at[idx_dst, nbikes] += b
                     bikes.at[idx_src, ndocks] += b
                     bikes.at[idx_dst, ndocks] -= b
-
 
     print(len(bikes.loc[(bikes[nbikes] < requiredBikes) | (bikes[ndocks] < requiredDocks)]))
 
