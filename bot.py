@@ -10,8 +10,6 @@ from data import dibuixaMapa, creaGraf, connectedComponents, nodesGraph, edgesGr
 '''
 Coses que falten a fer:
     --acabar d'arreglar els textos
-    --fer alguna cosa extra per anar de sobrats(amb la capacitat de cada estacio o la altitud)
-    --graf lineal
     --treure els chivatos
     --editar bot
 

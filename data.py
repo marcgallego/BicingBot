@@ -14,6 +14,7 @@ def getBikes():
     bikes = bikes[['num_bikes_available', 'num_docks_available']]
     return bikes
 
+
 def getStations():
     url_info = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
     stations = pd.DataFrame.from_records(pd.read_json(url_info)['data']['stations'], index='station_id')
@@ -228,10 +229,5 @@ def nodesGraph(G):
 def edgesGraph(G):
     return G.number_of_edges()
 
-
 def tests():
-    print("Executar tests")
-
-
-distributeBikes(1,2,3)
-tests()
+    print("Hola")

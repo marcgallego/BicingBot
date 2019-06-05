@@ -48,7 +48,7 @@ def boundingBox():
             Lat_ = lat
     return LatX, Lat_, Lon_, LonX
 
-def matriu(dist):
+def stations_matrix(dist):
     d = dist/1000
     #Diccionari de punts amb la localitzacio a la matriu
     punts = dict()
@@ -74,47 +74,48 @@ def matriu(dist):
     return Matrix, punts
 
 
-def puntsConnexes(G, origen, punts, d):
+def puntsConnexes(G, origen, punts, max_dist, directed):
     speed = 10*1000/3600
     for desti in punts:
-        dist = distance(origen,desti)
-        if(dist <= d):
-            G.add_edge(origen, desti, weight = dist/speed)
+        dist = distance(origen, desti)
+        if(dist <= max_dist):
+            if(not directed):
+                G.add_edge(origen, desti, weight = dist/speed)
+            else:
+                G.add_edge(origen, desti, weight = dist)
+                G.add_edge(desti, origen, weight = dist)
 
 
-def grafFromMatrix(Matrix, punts, d):
-    G = nx.Graph()
+def grafFromMatrix(G, Matrix, points, dist, dir):
     for id in station_ids:
         G.add_node(id)
-    for key in punts:
-        f = punts[key][0]
-        c = punts[key][1]
+    for key in points:
+        f = points[key][0]
+        c = points[key][1]
         h = len(Matrix)
         w = len(Matrix[0])
 
-        if punts[key][2] != 1:
-            puntsConnexes(G, key, Matrix[f][c], d)
+        if points[key][2] != 1:
+            puntsConnexes(G, key, Matrix[f][c], dist, dir)
             if f+1 < h:
-                puntsConnexes(G, key, Matrix[f+1][c], d)
+                puntsConnexes(G, key, Matrix[f+1][c], dist, dir)
             if f-1 >= 0:
-                puntsConnexes(G, key, Matrix[f-1][c], d)
+                puntsConnexes(G, key, Matrix[f-1][c], dist, dir)
             if c-1 >= 0:
-                puntsConnexes(G, key, Matrix[f][c-1], d)
+                puntsConnexes(G, key, Matrix[f][c-1], dist, dir)
             if c+1 < w:
-                puntsConnexes(G, key, Matrix[f][c+1], d)
+                puntsConnexes(G, key, Matrix[f][c+1], dist, dir)
             if f+1 < h and c-1 >= 0:
-                puntsConnexes(G, key, Matrix[f+1][c-1], d)
+                puntsConnexes(G, key, Matrix[f+1][c-1], dist, dir)
             if f+1 < h and c+1 < w:
-                puntsConnexes(G, key, Matrix[f+1][c+1], d)
+                puntsConnexes(G, key, Matrix[f+1][c+1], dist, dir)
             if f-1 >= 0 and c-1 >= 0:
-                puntsConnexes(G, key, Matrix[f-1][c-1], d)
+                puntsConnexes(G, key, Matrix[f-1][c-1], dist, dir)
             if f-1 >= 0 and c+1 < w:
-                puntsConnexes(G, key, Matrix[f-1][c+1], d)
-            punts[key][2] = 1
-    return G
+                puntsConnexes(G, key, Matrix[f-1][c+1], dist, dir)
+            points[key][2] = 1
 
-def grafQuadratic(max_dist):
-    G = nx.Graph()
+def grafQuadratic(G, max_dist, directed):
     visitat = dict()
     speed = 10*1000/3600
     for id in station_ids:
@@ -126,33 +127,34 @@ def grafQuadratic(max_dist):
             if (not visitat[desti]):
                 dist = distance(origen, desti)
                 if (dist <= max_dist):
-                    G.add_edge(origen, desti, weight = dist/speed)
-    return G
+                    if(not directed):
+                        G.add_edge(origen, desti, weight = dist/speed)
+                    else:
+                        G.add_edge(origen, desti, weight = dist)
+                        G.add_edge(desti, origen, weight = dist)
 
-def grafLinial(d):
-    if d >= 5:
-        Matrix, punts = matriu(d)
-        return grafFromMatrix(Matrix, punts, d)
+def grafLinial(G, max_dist, directed):
+    if max_dist >= 5:
+        Matrix, points = stations_matrix(max_dist)
+        grafFromMatrix(G, Matrix, points, max_dist, directed)
+
+def creaGraf(max_dist, directed):
+
+    if(not directed):
+        G = nx.Graph()
     else:
-        return 0
+        G = nx.DiGraph()
 
-def creaGraf(max_dist):
-    G = nx.Graph()
     if max_dist >= 50:
-        G = grafLinial(max_dist)
+        grafLinial(G, max_dist, directed)
     else:
-        G = grafQuadratic(max_dist)
+        grafQuadratic(G, max_dist, directed)
+
     return G
 
 def main():
     d = 600
 
-    G = grafLinial(d)
+    G = creaGraf(d, False)
     print(G.number_of_edges())
     dibuixaMapa(G, "linial.jpg")
-
-    Q = grafQuadratic(d)
-    print(Q.number_of_edges())
-    dibuixaMapa(Q, "quadratic.jpg")
-
-main()
