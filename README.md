@@ -30,10 +30,8 @@ Ara podeu provar localment les funcions de l'arxiu `data.py` o bé executar el v
 
 ## Execució dels tests
 
-Per a executar els tests, simplement executeu el programa `data.py`, amb la comanda següent:
-```
-python3 data.py
-```
+Per a executar els tests, simplement invoqueu la funció `tests` del programa `data.py`.
+
 Això, per defecte, executarà un parell de vegades cada una de les funcions principals del programa, amb uns paràmetres predeterminats. Sentiu-vos lliures de modificar la funció `tests` per a alterar aquests paràmetres.
 
 
