@@ -7,7 +7,8 @@ import os
 from telegram.ext import Updater, CommandHandler
 from data import dibuixaMapa, creaGraf, connectedComponents, nodesGraph, edgesGraph, shortestPath, flows
 
-# Generates a random name (multi-user support)
+
+# Generates a random name (multi-user support)
 def randomName():
     stringLength = 10
     letters = string.ascii_lowercase
@@ -80,6 +81,7 @@ def route(bot, update, args, user_data):
         os.remove(photoName)
     except:
         bot.send_message(chat_id=update.message.chat_id, text="💀Alguna cosa ha fallat...")
+
 
 def distribute(bot, update, args, user_data):
     bot.send_message(chat_id=update.message.chat_id, text="⏲️Calculant...")
