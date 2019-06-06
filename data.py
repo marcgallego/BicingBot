@@ -22,8 +22,6 @@ def getStations():
     stations = stations[['address', 'lat', 'lon']]
     return stations
 
-stations = getStations()
-
 
 def swap(coords):  # Returns (lat, lon)
     return coords[::-1]
@@ -116,24 +114,125 @@ def shortestPath(G, addresses, photoName):
     return p
 
 
-def creaGraf(max_dist):
-    print('entra')
-    G = nx.Graph()
-    visitat = dict()
-    station_ids = stations.index.tolist()
-    speed = 10*1000/3600
+def boundingBox():
+    LatX, Lat_, Lon_, LonX = 0, 999, 999, 0
+    for element in station_ids:
+        lon, lat = getCoords(element)
+        if lon < Lon_:
+            Lon_ = lon
+        elif lon > LonX:
+            LonX = lon
+        if lat > LatX:
+            LatX = lat
+        elif lat < Lat_:
+            Lat_ = lat
+    return LatX, Lat_, Lon_, LonX
 
+
+def stations_matrix(dist):
+    d = dist/1000
+    # Diccionari de punts amb la localitzacio a la matriu
+    punts = dict()
+    # Convertir a graus
+    d = d / 111
+    LatX, Lat_, Lon_, LonX = boundingBox()
+    w = int((LonX-Lon_)//d)
+    h = int((LatX-Lat_)//d)
+
+    Matrix = [[[] for x in range(w)] for y in range(h)]
+
+    for element in station_ids:
+        lon, lat = getCoords(element)
+        fila = int((lat - Lat_) // d)
+        columna = int((lon - Lon_) // d)
+        if(fila >= h):
+            fila -= 1
+        if(columna >= w):
+            columna -= 1
+        Matrix[h-1-fila][columna].append(element)
+        punts[element] = [h-1-fila, columna, 0]
+
+    return Matrix, punts
+
+
+def puntsConnexes(G, origen, punts, max_dist, directed):
+    speed = 10*1000/3600
+    for desti in punts:
+        dist = distance(origen, desti)
+        if(dist <= max_dist):
+            if(not directed):
+                G.add_edge(origen, desti, weight=dist/speed)
+            else:
+                G.add_edge(origen, desti, weight=dist)
+                G.add_edge(desti, origen, weight=dist)
+
+
+def grafFromMatrix(G, Matrix, points, dist, dir):
+    for id in station_ids:
+        G.add_node(id)
+    for key in points:
+        f = points[key][0]
+        c = points[key][1]
+        h = len(Matrix)
+        w = len(Matrix[0])
+
+        if points[key][2] != 1:
+            puntsConnexes(G, key, Matrix[f][c], dist, dir)
+            if f+1 < h:
+                puntsConnexes(G, key, Matrix[f+1][c], dist, dir)
+            if f-1 >= 0:
+                puntsConnexes(G, key, Matrix[f-1][c], dist, dir)
+            if c-1 >= 0:
+                puntsConnexes(G, key, Matrix[f][c-1], dist, dir)
+            if c+1 < w:
+                puntsConnexes(G, key, Matrix[f][c+1], dist, dir)
+            if f+1 < h and c-1 >= 0:
+                puntsConnexes(G, key, Matrix[f+1][c-1], dist, dir)
+            if f+1 < h and c+1 < w:
+                puntsConnexes(G, key, Matrix[f+1][c+1], dist, dir)
+            if f-1 >= 0 and c-1 >= 0:
+                puntsConnexes(G, key, Matrix[f-1][c-1], dist, dir)
+            if f-1 >= 0 and c+1 < w:
+                puntsConnexes(G, key, Matrix[f-1][c+1], dist, dir)
+            points[key][2] = 1
+
+
+def grafQuadratic(G, max_dist, directed):
+    visitat = dict()
+    speed = 10*1000/3600
     for id in station_ids:
         G.add_node(id)
         visitat.update({id: False})
     for origen in station_ids:
-        visitat[origen] = True;
+        visitat[origen] = True
         for desti in station_ids:
             if (not visitat[desti]):
                 dist = distance(origen, desti)
                 if (dist <= max_dist):
-                    G.add_edge(origen, desti, weight = dist/speed)
-    print('graf fet')
+                    if(not directed):
+                        G.add_edge(origen, desti, weight=dist/speed)
+                    else:
+                        G.add_edge(origen, desti, weight=dist)
+                        G.add_edge(desti, origen, weight=dist)
+
+
+def grafLinial(G, max_dist, directed):
+    if max_dist >= 5:
+        Matrix, points = stations_matrix(max_dist)
+        grafFromMatrix(G, Matrix, points, max_dist, directed)
+
+
+def creaGraf(max_dist, directed):
+    if(not directed):
+        G = nx.Graph()
+    else:
+        G = nx.DiGraph()
+
+    if max_dist >= 50:
+        grafLinial(G, max_dist, directed)
+    else:
+        grafQuadratic(G, max_dist, directed)
+
     return G
 
 
@@ -170,53 +269,86 @@ def dibuixaMapa(G, photoName):
     print('mapa fet')
 
 
-def distributeBikes(radius, requiredBikes, requiredDocks):
-    DG = nx.DiGraph()
-    DG.add_node('TOP') # The green node
+def flows(radius, requiredBikes, requiredDocks):
+
+    stations = getStations()
+    bikes = getBikes()
+
+    nbikes = 'num_bikes_available'
+    ndocks = 'num_docks_available'
+
+    print(len(bikes.loc[(bikes[nbikes] < requiredBikes) | (bikes[ndocks] < requiredDocks)]))
+
+    G = creaGraf(radius, True)
+    G.add_node('TOP')  # The green node
     demand = 0
 
-    bikes = getBikes()
+    # Iterem per totes les estacions:
     for st in bikes.itertuples():
-        idx = st.Index # Station ID
+        idx = st.Index  # Station ID
         if idx not in stations.index: continue
         stridx = str(idx)
 
         # The blue (s), black (g) and red (t) nodes of the graph
-        s_idx, g_idx, t_idx = 's'+stridx, 'g'+stridx, 't'+stridx
-        DG.add_node(g_idx)
-        DG.add_node(s_idx)
-        DG.add_node(t_idx)
+        s_idx, g_idx, t_idx = 's'+stridx, idx, 't'+stridx
+        G.add_node(s_idx)
+        G.add_node(t_idx)
 
         b, d = st.num_bikes_available, st.num_docks_available
         req_bikes = max(0, requiredBikes - b)
         req_docks = max(0, requiredDocks - d)
 
+        cap_bikes = max(0, b - requiredBikes)
+        cap_docks = max(0, d - requiredDocks)
+
         # Some of the following edges require attributes (posar capacitats)
-        DG.add_edge('TOP', s_idx)
-        DG.add_edge(t_idx, 'TOP')
-        DG.add_edge(s_idx, g_idx, capacity = max(0, b - requiredBikes)) #Bicis que puc rebre per seguir tenint n docks
-        DG.add_edge(g_idx, t_idx, capacity = max(0, d - requiredDocks)) #Bicis que puc donar per seguir tenint m bicis
+        G.add_edge('TOP', s_idx)
+        G.add_edge(t_idx, 'TOP')
+        G.add_edge(s_idx, g_idx, capacity=cap_bikes)  # Bicis que puc rebre per seguir tenint n docks
+        G.add_edge(g_idx, t_idx, capacity=cap_docks)  # Bicis que puc donar per seguir tenint m bicis
 
         if req_bikes > 0:
             demand += req_bikes
-            DG.nodes[t_idx]['demand'] = req_bikes
+            G.nodes[t_idx]['demand'] = req_bikes
         elif req_docks > 0:
             demand -= req_docks
-            DG.nodes[s_idx]['demand'] = -req_docks
+            G.nodes[s_idx]['demand'] = -req_docks
 
-    DG.nodes['TOP']['demand'] = -demand  # The sum of the demands must be zero
+    G.nodes['TOP']['demand'] = -demand  # The sum of the demands must be zero
 
-    for idx1, idx2 in it.combinations(stations.index.values, 2):
-        coord1 = (stations.at[idx1, 'lat'], stations.at[idx1, 'lon'])
-        coord2 = (stations.at[idx2, 'lat'], stations.at[idx2, 'lon'])
-        dist = haversine(coord1, coord2, unit='m')
-        if dist <= radius:
-            dist = int(dist*1000)
-            # The edges must be bidirectional: g_idx1 <--> g_idx2
-            DG.add_edge('g'+str(idx1), 'g'+str(idx2), weight=dist)
-            DG.add_edge('g'+str(idx2), 'g'+str(idx1), weight=dist)
+    print('Graph with', G.number_of_nodes(), "nodes and", G.number_of_edges(), "edges.")
 
-    print('Graph with', DG.number_of_nodes(), "nodes and", DG.number_of_edges(), "edges.")
+    err = False
+
+    try:
+        flowCost, flowDict = nx.network_simplex(G)
+
+    except nx.NetworkXUnfeasible:
+        err = True
+        print("No solution could be found")
+
+    except:
+        err = True
+        print("Something bad happened!")
+
+    if not err:
+
+        print("The total cost of transferring bikes is", flowCost/1000, "km.")
+
+        # We update the status of the stations according to the calculated transportation of bicycles
+        for src in flowDict:
+
+            if isinstance(src, int) or src == 'TOP': continue
+            idx_src = int(src[1:])
+            for idx_dst, b in flowDict[src].items():
+                if isinstance(idx_dst, int) and b > 0:
+                    print(idx_src, "->", idx_dst, " ", b, "bikes, distance", G.edges[src, idx_dst]['weight'])
+                    bikes.at[idx_src, nbikes] -= b
+                    bikes.at[idx_dst, nbikes] += b
+                    bikes.at[idx_src, ndocks] += b
+                    bikes.at[idx_dst, ndocks] -= b
+
+    print(len(bikes.loc[(bikes[nbikes] < requiredBikes) | (bikes[ndocks] < requiredDocks)]))
 
 
 def connectedComponents(G):
@@ -231,5 +363,4 @@ def edgesGraph(G):
     return G.number_of_edges()
 
 
-def tests():
-    print("Hola")
+stations = getStations()
