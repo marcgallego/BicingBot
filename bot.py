@@ -1,13 +1,13 @@
 import telegram
-from telegram.ext import Updater, CommandHandler
 import networkx as nx
 import random
 import string
 import os
 
+from telegram.ext import Updater, CommandHandler
 from data import dibuixaMapa, creaGraf, connectedComponents, nodesGraph, edgesGraph, shortestPath, flows
 
-
+# Generates a random name (multi-user support)
 def randomName():
     stringLength = 10
     letters = string.ascii_lowercase
@@ -18,7 +18,7 @@ def randomName():
 def start(bot, update, user_data):
     directed = False
     startText = "Hola " + update.message.chat.first_name + "!😄 Sóc un bot del Bicing de Barcelona.\
-    \nEt puc ajudar a buscar rutes i moltes coses més!😏😏 \nPer més informació escriu /help."
+    \nEt puc ajudar a buscar rutes i moltes coses més! 😏😏 \nPer més informació escriu /help."
     bot.send_message(chat_id=update.message.chat_id, text=startText)
     user_data['graf'] = creaGraf(1000, directed)
 
@@ -91,16 +91,14 @@ def distribute(bot, update, args, user_data):
         bot.send_message(chat_id=update.message.chat_id, text="💀Alguna cosa ha fallat...")
 
 
-# declara una constant amb el access token que llegeix de token.txt
+# Authentication issues
 TOKEN = open('token.txt').read().strip()
-
-
-# crea objectes per treballar amb Telegram
 updater = Updater(token=TOKEN)
+
 dispatcher = updater.dispatcher
 
 
-# indica que quan el bot rebi la comanda  s'executi la funció
+# Relates commands with the functions that have to be executed
 dispatcher.add_handler(CommandHandler('start', start, pass_user_data=True))
 dispatcher.add_handler(CommandHandler('help', help))
 dispatcher.add_handler(CommandHandler('authors', authors))
@@ -113,5 +111,5 @@ dispatcher.add_handler(CommandHandler('route', route, pass_args=True, pass_user_
 dispatcher.add_handler(CommandHandler('distribute', distribute, pass_args=True, pass_user_data=True))
 
 
-# engega el bot
+# Starts the bot
 updater.start_polling()
