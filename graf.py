@@ -1,14 +1,13 @@
 import pandas as pd
 import networkx as nx
 import os
-
-from pandas import DataFrame, Series
 from haversine import haversine
 
 from geopy.geocoders import Nominatim
 from staticmap import *
 import string
 from data import dibuixaMapa
+
 
 def readData():
     url = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
@@ -19,20 +18,24 @@ def readData():
 stations = readData()
 station_ids = stations.index.tolist()
 
-##############AUXILIARS JA HI SON A L'ORIGINIAL###################
+
+# #############AUXILIARS JA HI SON A L'ORIGINIAL###################
 def getCoords(id):
     lon = stations.loc[id, "lon"]
     lat = stations.loc[id, "lat"]
     return (lon, lat)
 
-def swap(coords): # returns (lat, lon)
+
+def swap(coords):  # returns (lat, lon)
     return coords[::-1]
+
 
 def distance(origen, desti):
     coordA = swap(getCoords(origen))
     coordB = swap(getCoords(desti))
     return haversine(coordA, coordB, unit='m')
 ################################################################
+
 
 def boundingBox():
     LatX, Lat_, Lon_, LonX = 0, 999, 999, 0
@@ -48,11 +51,12 @@ def boundingBox():
             Lat_ = lat
     return LatX, Lat_, Lon_, LonX
 
+
 def stations_matrix(dist):
     d = dist/1000
-    #Diccionari de punts amb la localitzacio a la matriu
+    # Diccionari de punts amb la localitzacio a la matriu
     punts = dict()
-    #Convertir a graus
+    # Convertir a graus
     d = d / 111
     LatX, Lat_, Lon_, LonX = boundingBox()
     w = int((LonX-Lon_)//d)
@@ -62,8 +66,8 @@ def stations_matrix(dist):
 
     for element in station_ids:
         lon, lat = getCoords(element)
-        fila = int((lat - Lat_)//d)
-        columna = int((lon - Lon_)//d)
+        fila = (lat - Lat_) // d
+        columna = (lon - Lon_) // d
         if(fila >= h):
             fila -= 1
         if(columna >= w):
@@ -80,10 +84,10 @@ def puntsConnexes(G, origen, punts, max_dist, directed):
         dist = distance(origen, desti)
         if(dist <= max_dist):
             if(not directed):
-                G.add_edge(origen, desti, weight = dist/speed)
+                G.add_edge(origen, desti, weight=dist/speed)
             else:
-                G.add_edge(origen, desti, weight = dist)
-                G.add_edge(desti, origen, weight = dist)
+                G.add_edge(origen, desti, weight=dist)
+                G.add_edge(desti, origen, weight=dist)
 
 
 def grafFromMatrix(G, Matrix, points, dist, dir):
@@ -115,6 +119,7 @@ def grafFromMatrix(G, Matrix, points, dist, dir):
                 puntsConnexes(G, key, Matrix[f-1][c+1], dist, dir)
             points[key][2] = 1
 
+
 def grafQuadratic(G, max_dist, directed):
     visitat = dict()
     speed = 10*1000/3600
@@ -122,24 +127,25 @@ def grafQuadratic(G, max_dist, directed):
         G.add_node(id)
         visitat.update({id: False})
     for origen in station_ids:
-        visitat[origen] = True;
+        visitat[origen] = True
         for desti in station_ids:
             if (not visitat[desti]):
                 dist = distance(origen, desti)
                 if (dist <= max_dist):
                     if(not directed):
-                        G.add_edge(origen, desti, weight = dist/speed)
+                        G.add_edge(origen, desti, weight=dist/speed)
                     else:
-                        G.add_edge(origen, desti, weight = dist)
-                        G.add_edge(desti, origen, weight = dist)
+                        G.add_edge(origen, desti, weight=dist)
+                        G.add_edge(desti, origen, weight=dist)
+
 
 def grafLinial(G, max_dist, directed):
     if max_dist >= 5:
         Matrix, points = stations_matrix(max_dist)
         grafFromMatrix(G, Matrix, points, max_dist, directed)
 
-def creaGraf(max_dist, directed):
 
+def creaGraf(max_dist, directed):
     if(not directed):
         G = nx.Graph()
     else:
@@ -151,6 +157,7 @@ def creaGraf(max_dist, directed):
         grafQuadratic(G, max_dist, directed)
 
     return G
+
 
 def main():
     d = 600
