@@ -97,8 +97,6 @@ def drawPath(path, coordsST, photoName):
 
 # Calculates the shortest path between 2 given addresses
 def shortestPath(G, addresses, photoName):
-    print("entra shortest path")
-
     coordsST = addressesTOcoordinates(addresses)
     if coordsST is None:
         return None
@@ -284,8 +282,6 @@ def flows(radius, requiredBikes, requiredDocks):
 
     nbikes = 'num_bikes_available'
     ndocks = 'num_docks_available'
-
-    print(len(bikes.loc[(bikes[nbikes] < requiredBikes) | (bikes[ndocks] < requiredDocks)]))
 
     G = creaGraf(radius, True)
     G.add_node('TOP')  # The green node
