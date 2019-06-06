@@ -270,7 +270,6 @@ def dibuixaMapa(G, photoName):
 
 
 def flows(radius, requiredBikes, requiredDocks):
-
     stations = getStations()
     bikes = getBikes()
 
@@ -362,4 +361,4 @@ def edgesGraph(G):
 stations = getStations()
 station_ids = stations.index.tolist()
 
-flows(600, 0, 0)
+#flows(600, 0, 0)
