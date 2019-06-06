@@ -28,17 +28,20 @@ def getStations():
 def swap(coords):
     return coords[::-1]
 
+
 # Returns (lon, lat) of a given station
 def getCoords(id):
     lon = stations.loc[id, "lon"]
     lat = stations.loc[id, "lat"]
     return (lon, lat)
 
+
 # Returns the distance between 2 stations (in meters)
 def distance(origen, desti):
     coordA = swap(getCoords(origen))
     coordB = swap(getCoords(desti))
     return haversine(coordA, coordB, unit='m')
+
 
 # Returns the walking time between 2 points (in seconds)
 def walkTime(coordsA, coordsB):
@@ -47,7 +50,7 @@ def walkTime(coordsA, coordsB):
     return distance / speed
 
 
-#Given two addresses in a string, it returns its' coordinates
+# Given two addresses in a string, it returns its' coordinates
 def addressesTOcoordinates(addresses):
     try:
         geolocator = Nominatim(user_agent="stations_bot")
@@ -97,16 +100,14 @@ def shortestPath(G, addresses, photoName):
     print("entra shortest path")
 
     coordsST = addressesTOcoordinates(addresses)
-    if(coordsST == None):
+    if coordsST is None:
         return None
     G.add_nodes_from(('source', 'target'))
 
-    #stations = getStations()
-    station_ids = stations.index.tolist()
     for id in station_ids:
         idCoords = swap(getCoords(id))
-        G.add_edge('source', id, weight = walkTime(coordsST[0], idCoords))
-        G.add_edge('target', id, weight = walkTime(coordsST[1], idCoords))
+        G.add_edge('source', id, weight=walkTime(coordsST[0], idCoords))
+        G.add_edge('target', id, weight=walkTime(coordsST[1], idCoords))
 
     weightST = walkTime(coordsST[0], coordsST[1])
     G.add_edge('source', 'target', weight=weightST)
@@ -137,9 +138,9 @@ def boundingBox():
 # Creates a matrix containing the stations by quadrant
 def stations_matrix(dist):
     d = dist/1000
-    punts = dict() # Map of points with its location in the matrix
+    punts = dict()  # Map of points with its location in the matrix
 
-    d = d / 111 # Conversion to degrees
+    d = d / 111  # Conversion to degrees
     LatX, Lat_, Lon_, LonX = boundingBox()
     w = int((LonX-Lon_)//d)
     h = int((LatX-Lat_)//d)
@@ -160,7 +161,7 @@ def stations_matrix(dist):
     return Matrix, punts
 
 
-# Adds eges to the graph G if they are at distance <= max_dist
+# Adds eges to the graph G if they are at distance <= max_dist
 def puntsConnexes(G, origen, punts, max_dist, directed):
     speed = 10*1000/3600
     for desti in punts:
@@ -245,6 +246,7 @@ def creaGraf(max_dist, directed):
 
     return G
 
+
 # Draws the whole graph in a map
 def dibuixaMapa(G, photoName):
     mida = 1500
@@ -264,12 +266,11 @@ def dibuixaMapa(G, photoName):
     # Adding edges to the map:
     for edge in edges:
         origen = edge[0]
-        desti  = edge[1]
+        desti = edge[1]
 
         coorA = getCoords(origen)
         coorB = getCoords(desti)
         m.add_line(Line(((coorA), (coorB)), 'blue', gruix))
-
 
     image = m.render()
     image.save(photoName)
@@ -302,11 +303,11 @@ def flows(radius, requiredBikes, requiredDocks):
         G.add_node(t_idx)
 
         b, d = st.num_bikes_available, st.num_docks_available
-        req_bikes = max(0, requiredBikes - b) # Required bikes in a certain station
-        req_docks = max(0, requiredDocks - d) # Required docks in a certain station
+        req_bikes = max(0, requiredBikes - b)  # Required bikes in a certain station
+        req_docks = max(0, requiredDocks - d)  # Required docks in a certain station
 
-        cap_bikes = max(0, b - requiredBikes) # Bikes that can be recieved
-        cap_docks = max(0, d - requiredDocks) # Bicis that can be given
+        cap_bikes = max(0, b - requiredBikes)  # Bikes that can be recieved
+        cap_docks = max(0, d - requiredDocks)  # Bicis that can be given
 
         G.add_edge('TOP', s_idx)
         G.add_edge(t_idx, 'TOP')
@@ -338,7 +339,7 @@ def flows(radius, requiredBikes, requiredDocks):
     if not err:
 
         cost = "The total cost of transferring bikes is " + str(flowCost/1000) + "km."
-        max_edge = "Done!" #If no bikes have to be moved, this will be the 2nd message
+        max_edge = "Done!"  # If no bikes have to be moved, this will be the 2nd message
 
         # We update the status of the stations according to the calculated transportation of bicycles
         for src in flowDict:
