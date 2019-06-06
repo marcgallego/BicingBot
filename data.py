@@ -8,6 +8,7 @@ from geopy.geocoders import Nominatim
 from staticmap import *
 import string
 
+
 def getBikes():
     url_status = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_status'
     bikes = pd.DataFrame.from_records(pd.read_json(url_status)['data']['stations'], index='station_id')
@@ -24,7 +25,7 @@ def getStations():
 stations = getStations()
 
 
-def swap(coords): # returns (lat, lon)
+def swap(coords):  # Returns (lat, lon)
     return coords[::-1]
 
 
@@ -64,7 +65,7 @@ def drawPath(path, coordsST, photoName):
     m = StaticMap(mida, mida)
     n = len(path)
 
-    #Plotting vertices:
+    # Plotting vertices:
     m.add_marker(CircleMarker(swap(coordsST[0]), 'black', diameter*2))
     m.add_marker(CircleMarker(swap(coordsST[0]), 'white', diameter))
 
@@ -79,12 +80,12 @@ def drawPath(path, coordsST, photoName):
     if n == 2:
         m.add_line(Line((swap(coordsST[0]), swap(coordsST[1])), 'red', thickness))
     else:
-        m.add_line(Line((swap(coordsST[0]), getCoords(path[1],stations)), 'red', thickness))
+        m.add_line(Line((swap(coordsST[0]), getCoords(path[1], stations)), 'red', thickness))
         for i in range(2, n-1):
             coordsA = getCoords(path[i-1], stations)
             coordsB = getCoords(path[i], stations)
             m.add_line(Line(((coordsA), (coordsB)), 'blue', thickness))
-        m.add_line(Line((swap(coordsST[1]), getCoords(path[-2],stations)), 'red', thickness))
+        m.add_line(Line((swap(coordsST[1]), getCoords(path[-2], stations)), 'red', thickness))
     image = m.render()
     image.save(photoName)
     print('Done!')
@@ -108,7 +109,7 @@ def shortestPath(G, addresses, photoName):
     weightST = walkTime(coordsST[0], coordsST[1])
     G.add_edge('source', 'target', weight=weightST)
 
-    p = nx.dijkstra_path(G,'source','target','weight')
+    p = nx.dijkstra_path(G, 'source', 'target', 'weight')
     drawPath(p, coordsST, photoName)
 
     G.remove_nodes_from(('source', 'target'))
@@ -203,7 +204,7 @@ def distributeBikes(radius, requiredBikes, requiredDocks):
             demand -= req_docks
             DG.nodes[s_idx]['demand'] = -req_docks
 
-    DG.nodes['TOP']['demand'] = -demand # The sum of the demands must be zero
+    DG.nodes['TOP']['demand'] = -demand  # The sum of the demands must be zero
 
     for idx1, idx2 in it.combinations(stations.index.values, 2):
         coord1 = (stations.at[idx1, 'lat'], stations.at[idx1, 'lon'])
@@ -218,16 +219,17 @@ def distributeBikes(radius, requiredBikes, requiredDocks):
     print('Graph with', DG.number_of_nodes(), "nodes and", DG.number_of_edges(), "edges.")
 
 
-
-#Potser estaria be posar aqui dues funcions tontes que diguin edges i nodes (per cohesio)
 def connectedComponents(G):
     return nx.number_connected_components(G)
+
 
 def nodesGraph(G):
     return G.number_of_nodes()
 
+
 def edgesGraph(G):
     return G.number_of_edges()
+
 
 def tests():
     print("Hola")
