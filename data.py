@@ -1,14 +1,14 @@
 import os
+import string
 import pandas as pd
 import networkx as nx
-import itertools as it
-from haversine import haversine
 
+from haversine import haversine
 from geopy.geocoders import Nominatim
 from staticmap import *
-import string
 
 
+# Returns the dataframe containing the number of bikes on each station
 def getBikes():
     url_status = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_status'
     bikes = pd.DataFrame.from_records(pd.read_json(url_status)['data']['stations'], index='station_id')
@@ -16,6 +16,7 @@ def getBikes():
     return bikes
 
 
+# Returns the dataframe containing the stations' position
 def getStations():
     url_info = 'https://api.bsmsa.eu/ext/api/bsm/gbfs/v2/en/station_information'
     stations = pd.DataFrame.from_records(pd.read_json(url_info)['data']['stations'], index='station_id')
@@ -23,28 +24,30 @@ def getStations():
     return stations
 
 
-def swap(coords):  # Returns (lat, lon)
+# Given (lon, lat), returns (lat, lon)
+def swap(coords):
     return coords[::-1]
 
-
+# Returns (lon, lat) of a given station
 def getCoords(id):
     lon = stations.loc[id, "lon"]
     lat = stations.loc[id, "lat"]
     return (lon, lat)
 
-
+# Returns the distance between 2 stations (in meters)
 def distance(origen, desti):
     coordA = swap(getCoords(origen))
     coordB = swap(getCoords(desti))
     return haversine(coordA, coordB, unit='m')
 
-
+# Returns the walking time between 2 points (in seconds)
 def walkTime(coordsA, coordsB):
     speed = 4*1000/3600
     distance = haversine(coordsA, coordsB, unit='m')
     return distance / speed
 
 
+#Given two addresses in a string, it returns its' coordinates
 def addressesTOcoordinates(addresses):
     try:
         geolocator = Nominatim(user_agent="stations_bot")
@@ -56,6 +59,7 @@ def addressesTOcoordinates(addresses):
         return None
 
 
+# Draws a path (given as a list of nodes) in a map
 def drawPath(path, coordsST, photoName):
     mida = 1500
     diameter = mida // 180
@@ -86,9 +90,9 @@ def drawPath(path, coordsST, photoName):
         m.add_line(Line((swap(coordsST[1]), getCoords(path[-2])), 'red', thickness))
     image = m.render()
     image.save(photoName)
-    print('Done!')
 
 
+# Calculates the shortest path between 2 given addresses
 def shortestPath(G, addresses, photoName):
     print("entra shortest path")
 
@@ -114,6 +118,7 @@ def shortestPath(G, addresses, photoName):
     return p
 
 
+# Returns the bounding box of all points
 def boundingBox():
     LatX, Lat_, Lon_, LonX = 0, 999, 999, 0
     for element in station_ids:
@@ -129,12 +134,12 @@ def boundingBox():
     return LatX, Lat_, Lon_, LonX
 
 
+# Creates a matrix containing the stations by quadrant
 def stations_matrix(dist):
     d = dist/1000
-    # Diccionari de punts amb la localitzacio a la matriu
-    punts = dict()
-    # Convertir a graus
-    d = d / 111
+    punts = dict() # Map of points with its location in the matrix
+    
+    d = d / 111 # Conversion to degrees
     LatX, Lat_, Lon_, LonX = boundingBox()
     w = int((LonX-Lon_)//d)
     h = int((LatX-Lat_)//d)
@@ -155,6 +160,7 @@ def stations_matrix(dist):
     return Matrix, punts
 
 
+# Adds eges to the graph G if they are at distance <= max_dist
 def puntsConnexes(G, origen, punts, max_dist, directed):
     speed = 10*1000/3600
     for desti in punts:
@@ -167,6 +173,7 @@ def puntsConnexes(G, origen, punts, max_dist, directed):
                 G.add_edge(desti, origen, weight=dist)
 
 
+# Given the matrix that 'classifies' the stations, it builds the graph
 def grafFromMatrix(G, Matrix, points, dist, dir):
     for id in station_ids:
         G.add_node(id)
@@ -197,6 +204,7 @@ def grafFromMatrix(G, Matrix, points, dist, dir):
             points[key][2] = 1
 
 
+# Builds the graph using the quadratic algorithm (only used for short distances)
 def grafQuadratic(G, max_dist, directed):
     visitat = dict()
     speed = 10*1000/3600
@@ -216,12 +224,14 @@ def grafQuadratic(G, max_dist, directed):
                         G.add_edge(desti, origen, weight=dist)
 
 
+# Builds the graph on linear time
 def grafLinial(G, max_dist, directed):
     if max_dist >= 5:
         Matrix, points = stations_matrix(max_dist)
         grafFromMatrix(G, Matrix, points, max_dist, directed)
 
 
+# Creates the graph using some algorithm, dependind on max_dist
 def creaGraf(max_dist, directed):
     if(not directed):
         G = nx.Graph()
@@ -235,22 +245,23 @@ def creaGraf(max_dist, directed):
 
     return G
 
-
+# Draws the whole graph in a map
 def dibuixaMapa(G, photoName):
-    print('entra mapa')
-    midaX = midaY = 1500
-    diametre = midaX // 180
-    m = StaticMap(midaX, midaY)
+    mida = 1500
+    diametre = int(mida // 180)
+    m = StaticMap(mida, mida)
 
+    # Adding nodes to the map:
     nodes = list(G.nodes)
     for node in nodes:
         coords = getCoords(node)
         m.add_marker(CircleMarker(coords, 'black', diametre*2))
         m.add_marker(CircleMarker(coords, 'white', diametre))
-    print('nodes fets')
 
     edges = list(G.edges.data())
-    gruix = midaX // 300
+    gruix = int(mida // 300)
+
+    # Adding edges to the map:
     for edge in edges:
         origen = edge[0]
         desti  = edge[1]
@@ -259,16 +270,13 @@ def dibuixaMapa(G, photoName):
         coorB = getCoords(desti)
         m.add_line(Line(((coorA), (coorB)), 'blue', gruix))
 
-    print('arestes fets')
 
     image = m.render()
-    print('render fets')
-
     image.save(photoName)
 
-    print('mapa fet')
 
-
+# Calculates the bikes that must be transfered to ensure
+# requiredBikes and requiredDocks at every station
 def flows(radius, requiredBikes, requiredDocks):
     stations = getStations()
     bikes = getBikes()
@@ -282,29 +290,28 @@ def flows(radius, requiredBikes, requiredDocks):
     G.add_node('TOP')  # The green node
     demand = 0
 
-    # Iterem per totes les estacions:
+    # Iterate on every station
     for st in bikes.itertuples():
         idx = st.Index  # Station ID
         if idx not in stations.index: continue
         stridx = str(idx)
 
-        # The blue (s), black (g) and red (t) nodes of the graph
+        # The blue (s), black and red (t) nodes of the graph
         s_idx, g_idx, t_idx = 's'+stridx, idx, 't'+stridx
         G.add_node(s_idx)
         G.add_node(t_idx)
 
         b, d = st.num_bikes_available, st.num_docks_available
-        req_bikes = max(0, requiredBikes - b)
-        req_docks = max(0, requiredDocks - d)
+        req_bikes = max(0, requiredBikes - b) # Required bikes in a certain station
+        req_docks = max(0, requiredDocks - d) # Required docks in a certain station
 
-        cap_bikes = max(0, b - requiredBikes)
-        cap_docks = max(0, d - requiredDocks)
+        cap_bikes = max(0, b - requiredBikes) # Bikes that can be recieved
+        cap_docks = max(0, d - requiredDocks) # Bicis that can be given
 
-        # Some of the following edges require attributes (posar capacitats)
         G.add_edge('TOP', s_idx)
         G.add_edge(t_idx, 'TOP')
-        G.add_edge(s_idx, g_idx, capacity=cap_bikes)  # Bicis que puc rebre per seguir tenint n docks
-        G.add_edge(g_idx, t_idx, capacity=cap_docks)  # Bicis que puc donar per seguir tenint m bicis
+        G.add_edge(s_idx, g_idx, capacity=cap_bikes) 
+        G.add_edge(g_idx, t_idx, capacity=cap_docks)
 
         if req_bikes > 0:
             demand += req_bikes
@@ -315,8 +322,6 @@ def flows(radius, requiredBikes, requiredDocks):
 
     G.nodes['TOP']['demand'] = -demand  # The sum of the demands must be zero
 
-    print('Graph with', G.number_of_nodes(), "nodes and", G.number_of_edges(), "edges.")
-
     err = False
 
     try:
@@ -324,16 +329,16 @@ def flows(radius, requiredBikes, requiredDocks):
 
     except nx.NetworkXUnfeasible:
         err = True
-        print("No solution could be found")
+        return "No solution could be found!", "Try again later"
 
     except:
         err = True
-        print("Something bad happened!")
+        return "Something bad happened!", "Try again later"
 
     if not err:
 
         cost = "The total cost of transferring bikes is " + str(flowCost/1000) + "km."
-        max_edge = "Done!" #Pel cas en que no s'ha de moure res, aquest serà el 2n missatge.
+        max_edge = "Done!" #If no bikes have to be moved, this will be the 2nd message
 
         # We update the status of the stations according to the calculated transportation of bicycles
         for src in flowDict:
@@ -343,8 +348,10 @@ def flows(radius, requiredBikes, requiredDocks):
             for idx_dst, b in flowDict[src].items():
                 if isinstance(idx_dst, int) and b > 0:
                     max_edge = str(idx_src) + " -> " + str(idx_dst) + "  Cost: " + str(b*G.edges[src, idx_dst]['weight'])
+                    return cost, max_edge
 
         return cost, max_edge
+
 
 def connectedComponents(G):
     return nx.number_connected_components(G)
@@ -360,5 +367,3 @@ def edgesGraph(G):
 
 stations = getStations()
 station_ids = stations.index.tolist()
-
-#flows(600, 0, 0)
