@@ -27,15 +27,15 @@ def swap(coords):  # Returns (lat, lon)
     return coords[::-1]
 
 
-def getCoords(id, stations):
+def getCoords(id):
     lon = stations.loc[id, "lon"]
     lat = stations.loc[id, "lat"]
     return (lon, lat)
 
 
 def distance(origen, desti):
-    coordA = swap(getCoords(origen, stations))
-    coordB = swap(getCoords(desti, stations))
+    coordA = swap(getCoords(origen))
+    coordB = swap(getCoords(desti))
     return haversine(coordA, coordB, unit='m')
 
 
@@ -71,19 +71,19 @@ def drawPath(path, coordsST, photoName):
     m.add_marker(CircleMarker(swap(coordsST[1]), 'white', diameter))
 
     for id in path[1:-1]:
-        coords = getCoords(id, stations)
+        coords = getCoords(id)
         marker = CircleMarker(coords, 'black', diameter)
         m.add_marker(marker)
 
     if n == 2:
         m.add_line(Line((swap(coordsST[0]), swap(coordsST[1])), 'red', thickness))
     else:
-        m.add_line(Line((swap(coordsST[0]), getCoords(path[1], stations)), 'red', thickness))
+        m.add_line(Line((swap(coordsST[0]), getCoords(path[1])), 'red', thickness))
         for i in range(2, n-1):
-            coordsA = getCoords(path[i-1], stations)
-            coordsB = getCoords(path[i], stations)
+            coordsA = getCoords(path[i-1])
+            coordsB = getCoords(path[i])
             m.add_line(Line(((coordsA), (coordsB)), 'blue', thickness))
-        m.add_line(Line((swap(coordsST[1]), getCoords(path[-2], stations)), 'red', thickness))
+        m.add_line(Line((swap(coordsST[1]), getCoords(path[-2])), 'red', thickness))
     image = m.render()
     image.save(photoName)
     print('Done!')
@@ -100,7 +100,7 @@ def shortestPath(G, addresses, photoName):
     #stations = getStations()
     station_ids = stations.index.tolist()
     for id in station_ids:
-        idCoords = swap(getCoords(id, stations))
+        idCoords = swap(getCoords(id))
         G.add_edge('source', id, weight = walkTime(coordsST[0], idCoords))
         G.add_edge('target', id, weight = walkTime(coordsST[1], idCoords))
 
@@ -244,7 +244,7 @@ def dibuixaMapa(G, photoName):
 
     nodes = list(G.nodes)
     for node in nodes:
-        coords = getCoords(node, stations)
+        coords = getCoords(node)
         m.add_marker(CircleMarker(coords, 'black', diametre*2))
         m.add_marker(CircleMarker(coords, 'white', diametre))
     print('nodes fets')
@@ -255,8 +255,8 @@ def dibuixaMapa(G, photoName):
         origen = edge[0]
         desti  = edge[1]
 
-        coorA = getCoords(origen, stations)
-        coorB = getCoords(desti, stations)
+        coorA = getCoords(origen)
+        coorB = getCoords(desti)
         m.add_line(Line(((coorA), (coorB)), 'blue', gruix))
 
     print('arestes fets')
@@ -333,7 +333,8 @@ def flows(radius, requiredBikes, requiredDocks):
 
     if not err:
 
-        print("The total cost of transferring bikes is", flowCost/1000, "km.")
+        cost = "The total cost of transferring bikes is " + str(flowCost/1000) + "km."
+        max_edge = "Done!" #Pel cas en que no s'ha de moure res, aquest serà el 2n missatge.
 
         # We update the status of the stations according to the calculated transportation of bicycles
         for src in flowDict:
@@ -342,14 +343,9 @@ def flows(radius, requiredBikes, requiredDocks):
             idx_src = int(src[1:])
             for idx_dst, b in flowDict[src].items():
                 if isinstance(idx_dst, int) and b > 0:
-                    print(idx_src, "->", idx_dst, " ", b, "bikes, distance", G.edges[src, idx_dst]['weight'])
-                    bikes.at[idx_src, nbikes] -= b
-                    bikes.at[idx_dst, nbikes] += b
-                    bikes.at[idx_src, ndocks] += b
-                    bikes.at[idx_dst, ndocks] -= b
+                    max_edge = str(idx_src) + " -> " + str(idx_dst) + "  Cost: " + str(b*G.edges[src, idx_dst]['weight'])
 
-    print(len(bikes.loc[(bikes[nbikes] < requiredBikes) | (bikes[ndocks] < requiredDocks)]))
-
+        return cost, max_edge
 
 def connectedComponents(G):
     return nx.number_connected_components(G)
@@ -364,3 +360,6 @@ def edgesGraph(G):
 
 
 stations = getStations()
+station_ids = stations.index.tolist()
+
+flows(600, 0, 0)
