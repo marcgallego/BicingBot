@@ -138,7 +138,7 @@ def boundingBox():
 def stations_matrix(dist):
     d = dist/1000
     punts = dict() # Map of points with its location in the matrix
-    
+
     d = d / 111 # Conversion to degrees
     LatX, Lat_, Lon_, LonX = boundingBox()
     w = int((LonX-Lon_)//d)
@@ -310,7 +310,7 @@ def flows(radius, requiredBikes, requiredDocks):
 
         G.add_edge('TOP', s_idx)
         G.add_edge(t_idx, 'TOP')
-        G.add_edge(s_idx, g_idx, capacity=cap_bikes) 
+        G.add_edge(s_idx, g_idx, capacity=cap_bikes)
         G.add_edge(g_idx, t_idx, capacity=cap_docks)
 
         if req_bikes > 0:
